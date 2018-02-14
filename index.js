@@ -481,13 +481,13 @@ const cpu = {
   },
   tick: () => {
     const {mode, exec, size, cycles} = inst;
-    const branchCycles = 0;
     const opcode = mmu.readByte(cpu.pc);
     const next = cpu.pc + 1;
 
     console.log(cpu.pc, opcode.toString(16));
 
     let src, store;
+    let branchCycles = 0;
     switch (mode[opcode]) {
       case MODE_IMM:
         src = mmu.readByte(next);
