@@ -62,11 +62,11 @@ function asl({cpu, src, store}) {
   src &= 0xff;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  store(src);
 }
 
-function branch({cpu, src}, condition) {
-  if (condition) {
+function branch({cpu, src}, cond) {
+  if (cond) {
     const diff = cpu.pc & 0xff00 != (cpu.pc + src) & 0xff00;
     cpu.t += diff ? 2 : 1;
     cpu.pc = (cpu.pc + src) & 0xffff;
@@ -86,27 +86,23 @@ const bvs = ({cpu, src}) => branch({cpu, src}, cpu.flag.overflow());
 
 function bit({cpu, src}) {
   cpu.flag.sign(src);
-  cpu.flag.overflow(0x40 & src); // Copy bit 6 to OVERFLOW flag.
+  cpu.flag.overflow(0x40 & src);
   cpu.flag.zero(src & cpu.a);
 }
 
 function brk({cpu, mmu, src}) {
   cpu.pc++;
   cpu.push(cpu.pc);
-  cpu.flag.break(true); // Set BFlag before pushing.
+  cpu.flag.break(true);
   cpu.push(cpu.stat);
   cpu.flag.interrupt(true);
   cpu.pc = mmu.readWord(0xfffe);
 }
 
-const clear = function(flag) {
-  flag(false);
-};
-
-const clc = ({cpu}) => clear(cpu.flag.carry);
-const cld = ({cpu}) => clear(cpu.flag.decimal);
-const cli = ({cpu}) => clear(cpu.flag.interrupt);
-const clv = ({cpu}) => clear(cpu.flag.overflow);
+const clc = ({cpu}) => cpu.flag.carry(false);
+const cld = ({cpu}) => cpu.flag.decimal(false);
+const cli = ({cpu}) => cpu.flag.interrupt(false);
+const clv = ({cpu}) => cpu.flag.overflow(false);
 
 function compare({cpu, src}, value) {
   src = value - src;
@@ -126,8 +122,8 @@ function decrement({cpu, src}) {
   return src;
 }
 
-function decrementIx({cpu, src}, k) {
-  cpu[k] = decrement({cpu, src}, cpu[k]);
+function decrementIx({cpu, src}, reg) {
+  cpu[reg] = decrement({cpu, src}, cpu[reg]);
 }
 
 function dec({cpu, src, store}) {
@@ -151,8 +147,8 @@ function increment({cpu, src}) {
   return src;
 }
 
-function incrementIx({cpu, src}, k) {
-  cpu[k] = increment({cpu, src}, cpu[k]);
+function incrementIx({cpu, src}, reg) {
+  cpu[reg] = increment({cpu, src}, cpu[reg]);
 }
 
 function inc({cpu, src, store}) {
@@ -168,14 +164,14 @@ function jmp({cpu, src}) {
 
 function jsr({cpu, src}) {
   cpu.pc--;
-  cpu.push(cpu.pc); // Push return address onto the stack.
+  cpu.push(cpu.pc);
   cpu.pc = src;
 }
 
-function load({cpu, src}, k) {
+function load({cpu, src}, key) {
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  cpu[k] = src;
+  cpu[key] = src;
 }
 
 const lda = (...args) => load(...args, 'a');
@@ -187,7 +183,7 @@ function lsr({cpu, src, store}) {
   src >>= 1;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  store(src);
 }
 
 function nop() {};
@@ -208,12 +204,12 @@ function php({cpu}) {
 }
 
 function pla({cpu}) {
-  const src = cpu.pull();
-  cpu.flag.sign(src); // Change sign and zero flag accordingly.
-  cpu.flag.zero(src);
+  const val = cpu.pull();
+  cpu.flag.sign(val);
+  cpu.flag.zero(val);
 }
 
-function plp({cpu, src}) {
+function plp({cpu}) {
   cpu.stat = cpu.pull();
 }
 
@@ -224,7 +220,7 @@ function rol({cpu, src, store}) {
   src &= 0xff;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  store(src);
 }
 
 function ror({cpu, src, store}) {
@@ -233,26 +229,26 @@ function ror({cpu, src, store}) {
   src >>= 1;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  store(src);
 }
 
-function rti({cpu, src}) {
+function rti({cpu}) {
   cpu.stat = cpu.pull();
-  cpu.pc = cpu.pull(); // Load return address from stack.
+  cpu.pc = cpu.pull() | (cpu.pull() << 8);
 }
 
-function rts({cpu, src}) {
-  cpu.pc = cpu.pull(); // Load return address from stack and add 1.
+function rts({cpu}) {
+  cpu.pc = (cpu.pull() | (cpu.pull() << 8)) + 1;
 }
 
 function sbc({cpu, src}) {
   const carry = cpu.flag.carry() ? 0 : 1;
   let temp = cpu.a - src - carry;
   cpu.flag.sign(temp);
-  cpu.flag.zero(temp & 0xff); // Sign and Zero are invalid in decimal mode.
+  cpu.flag.zero(temp & 0xff);
   cpu.flag.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ src) & 0x80));
   if (cpu.flag.decimal()) {
-    if (((cpu.a & 0xf) - carry) < (src & 0xf)) { // EP
+    if (((cpu.a & 0xf) - carry) < (src & 0xf)) {
       temp -= 6;
     }
     if (temp > 0x99) {
@@ -263,13 +259,9 @@ function sbc({cpu, src}) {
   cpu.a = (temp & 0xff);
 }
 
-const set = function(flag) {
-  flag(true);
-};
-
-const sec = ({cpu}) => set(cpu.flag.carry);
-const sed = ({cpu}) => set(cpu.flag.decimal);
-const sei = ({cpu}) => set(cpu.flag.interrupt);
+const sec = ({cpu}) => cpu.flag.carry(true);
+const sed = ({cpu}) => cpu.flag.decimal(true);
+const sei = ({cpu}) => cpu.flag.interrupt(true);
 
 const sta = ({cpu, store}) => store(cpu.a);
 const stx = ({cpu, store}) => store(cpu.x);
@@ -542,35 +534,6 @@ const cpu = {
       }
       default: break;
     }
-
-    // switch (instSet.mode[opcode]) {
-    //   case 0: // Accumulator
-    //     src = cpu.a;
-    //     break;
-    //   case 1: // Immediate
-    //     src = mmu.readByte(cpu.pc + 1);
-    //     break;
-    //   case 2: { // Relative
-    //     let byte = mmu.readByte(cpu.pc + 1);
-    //     src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
-    //     break;
-    //   }
-    //   case 3: // Absolute
-    //     src = mmu.readWord(cpu.pc + 1);
-    //     break;
-    //   case 4: // Zero-Page
-    //     src = mmu.readByte(cpu.pc + 1);
-    //     break;
-    //   case 5: // Indirect
-    //     src = mmu.readWord(mmu.readWord(cpu.pc + 1));
-    //     break;
-    //   case 6: // Absolute Indexed
-    //     // X or Y
-    //     break;
-    //   case 7: // Zero-Page Indexed
-    //     // Same as above
-    //     break;
-    // }
     console.log(cpu.pc, opcode.toString(16));
     instSet.fn[opcode]({cpu: this, mmu, src, store});
     cpu.pc += instSet.size[opcode];
