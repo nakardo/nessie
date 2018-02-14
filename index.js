@@ -490,7 +490,7 @@ const cpu = {
         store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_ABS:
-        src = mmu.readWord(cpu.pc + 1);
+        src = mmu.readWord(next);
         store = (val) => mmu.writeWord(val, next);
         break;
       case MODE_ZEROPAGE_ABS:
@@ -501,13 +501,12 @@ const cpu = {
         break; // Nothing to do here.
       case MODE_ACC:
         src = cpu.a;
-        store = function(val) { cpu.a = val; };
+        store = (val) => { cpu.a = val; };
         break;
-      case MODE_IDX_X: {
+      case MODE_IDX_X:
         src = mmu.readWord(next) + cpu.x;
         store = (val) => mmu.writeByte(val, src);
         break;
-      }
       case MODE_IDX_Y:
         src = mmu.readWord(next) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
@@ -533,7 +532,7 @@ const cpu = {
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_REL: {
-        const byte = mmu.readByte(cpu.pc + 1);
+        const byte = mmu.readByte(next);
         src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
         store = (val) => mmu.writeByte(val, src);
         break;
