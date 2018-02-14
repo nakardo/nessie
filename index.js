@@ -1,6 +1,7 @@
 'use strict';
 
-const fs = require('fs');
+const Fs = require('fs');
+const RomData = Fs.readFileSync('./roms/mario.nes');
 
 function unk() {
   throw new Error('Unknown instruction');
@@ -27,216 +28,216 @@ function unk() {
  * * Add 1 if page boundary is crossed.
  */
 function adc({cpu, src}) {
-  const carry = cpu.flags.carry() ? 1 : 0;
-  let temp = src + cpu.reg.a + carry;
-  cpu.flags.zero(temp & 0xff);
-  if (cpu.flags.decimal()) {
-    if (((cpu.reg.a & 0xf) + (src & 0xf) + carry) > 9) {
+  const carry = cpu.flag.carry() ? 1 : 0;
+  let temp = src + cpu.a + carry;
+  cpu.flag.zero(temp & 0xff);
+  if (cpu.flag.decimal()) {
+    if (((cpu.a & 0xf) + (src & 0xf) + carry) > 9) {
       temp += 6;
     }
-    cpu.flags.sign(temp);
-    cpu.flags.overflow(!((cpu.reg.a ^ src) & 0x80) && ((cpu.reg.a ^ temp) & 0x80));
+    cpu.flag.sign(temp);
+    cpu.flag.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
     if (temp > 0x99) {
       temp += 96;
     }
-    cpu.flags.carry(temp > 0x99);
+    cpu.flag.carry(temp > 0x99);
   } else {
-    cpu.flags.sign(temp);
-    cpu.flags.overflow(!((cpu.reg.a ^ src) & 0x80) && ((cpu.reg.a ^ temp) & 0x80));
-    cpu.flags.carry(temp > 0xff);
+    cpu.flag.sign(temp);
+    cpu.flag.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
+    cpu.flag.carry(temp > 0xff);
   }
-  cpu.reg.a = temp & 0xff;
+  cpu.a = temp & 0xff;
 }
 
 function and({cpu, src}) {
-  src &= cpu.reg.a;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  cpu.reg.a = src;
+  src &= cpu.a;
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.a = src;
 }
 
-function asl({cpu, src}, store) {
-  cpu.flags.carry(src & 0x80);
+function asl({cpu, src}) {
+  cpu.flag.carry(src & 0x80);
   src <<= 1;
   src &= 0xff;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function branch({cpu, src}, condition) {
   if (condition) {
-    const diff = cpu.reg.pc & 0xff00 != (cpu.reg.pc + src) & 0xff00;
-    cpu.reg.t += diff ? 2 : 1;
-    cpu.reg.pc = (cpu.reg.pc + src) & 0xffff;
+    const diff = cpu.pc & 0xff00 != (cpu.pc + src) & 0xff00;
+    cpu.t += diff ? 2 : 1;
+    cpu.pc = (cpu.pc + src) & 0xffff;
   }
 }
 
-const bcs = (...args) => branch(...args, cpu.flags.carry());
-const beq = (...args) => branch(...args, cpu.flags.zero());
-const bmi = (...args) => branch(...args, cpu.flags.sign());
+const bcs = ({cpu, src}) => branch({cpu, src}, cpu.flag.carry());
+const beq = ({cpu, src}) => branch({cpu, src}, cpu.flag.zero());
+const bmi = ({cpu, src}) => branch({cpu, src}, cpu.flag.sign());
 
-const bcc = (...args) => branch(...args, !cpu.flags.carry());
-const bne = (...args) => branch(...args, !cpu.flags.zero());
-const bpl = (...args) => branch(...args, !cpu.flags.sign());
+const bcc = ({cpu, src}) => branch({cpu, src}, !cpu.flag.carry());
+const bne = ({cpu, src}) => branch({cpu, src}, !cpu.flag.zero());
+const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.flag.sign());
 
-const bvc = (...args) => branch(...args, !cpu.flags.overflow());
-const bvs = (...args) => branch(...args, cpu.flags.overflow());
+const bvc = ({cpu, src}) => branch({cpu, src}, !cpu.flag.overflow());
+const bvs = ({cpu, src}) => branch({cpu, src}, cpu.flag.overflow());
 
 function bit({cpu, src}) {
-  cpu.flags.sign(src);
-  cpu.flags.overflow(0x40 & src); // Copy bit 6 to OVERFLOW flag.
-  cpu.flags.zero(src & cpu.reg.a);
+  cpu.flag.sign(src);
+  cpu.flag.overflow(0x40 & src); // Copy bit 6 to OVERFLOW flag.
+  cpu.flag.zero(src & cpu.a);
 }
 
 function brk({cpu, mmu, src}) {
-  cpu.reg.pc++;
-  cpu.push(cpu.reg.pc);
-  cpu.flags.break(true); // Set BFlag before pushing.
-  cpu.push(cpu.reg.stat);
-  cpu.flags.interrupt(true);
-  cpu.reg.pc = mmu.readWord(0xfffe);
+  cpu.pc++;
+  cpu.push(cpu.pc);
+  cpu.flag.break(true); // Set BFlag before pushing.
+  cpu.push(cpu.stat);
+  cpu.flag.interrupt(true);
+  cpu.pc = mmu.readWord(0xfffe);
 }
 
 const clear = function(flag) {
   flag(false);
 };
 
-const clc = ({cpu}) => clear(cpu.flags.carry);
-const cld = ({cpu}) => clear(cpu.flags.decimal);
-const cli = ({cpu}) => clear(cpu.flags.interrupt);
-const clv = ({cpu}) => clear(cpu.flags.overflow);
+const clc = ({cpu}) => clear(cpu.flag.carry);
+const cld = ({cpu}) => clear(cpu.flag.decimal);
+const cli = ({cpu}) => clear(cpu.flag.interrupt);
+const clv = ({cpu}) => clear(cpu.flag.overflow);
 
 function compare({cpu, src}, value) {
   src = value - src;
-  cpu.flags.carry(src < 0x100);
-  cpu.flags.sign(src);
-  cpu.flags.zero(src &= 0xff);
+  cpu.flag.carry(src < 0x100);
+  cpu.flag.sign(src);
+  cpu.flag.zero(src &= 0xff);
 }
 
-const cmp = (...args) => compare(...args, cpu.reg.a);
-const cpx = (...args) => compare(...args, cpu.reg.x);
-const cpy = (...args) => compare(...args, cpu.reg.y);
+const cmp = ({cpu, src}) => compare({cpu, src}, cpu.a);
+const cpx = ({cpu, src}) => compare({cpu, src}, cpu.x);
+const cpy = ({cpu, src}) => compare({cpu, src}, cpu.y);
 
 function decrement({cpu, src}) {
   src = (src - 1) & 0xff;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
   return src;
 }
 
-function decrementRef({cpu, src}, ref) {
-  cpu.reg[ref] = decrement({cpu, src}, cpu.reg[ref]);
+function decrementIx({cpu, src}, k) {
+  cpu[k] = decrement({cpu, src}, cpu[k]);
 }
 
-function dec({cpu, src}, store) {
-  store(decrement({cpu, src}));
+function dec({cpu, src}) {
+  cpu.store(decrement({cpu, src}));
 }
 
-const dex = (...args) => decrementRef(...args, 'x');
-const dey = (...args) => decrementRef(...args, 'y');
+const dex = (...args) => decrementIx(...args, 'x');
+const dey = (...args) => decrementIx(...args, 'y');
 
 function eor({cpu, src}) {
-  src ^= cpu.reg.a;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  cpu.reg.a = src;
+  src ^= cpu.a;
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.a = src;
 }
 
 function increment({cpu, src}) {
   src = (src + 1) & 0xff;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
   return src;
 }
 
-function incrementRef({cpu, src}, ref) {
-  cpu.reg[ref] = increment({cpu, src}, cpu.reg[ref]);
+function incrementIx({cpu, src}, k) {
+  cpu[k] = increment({cpu, src}, cpu[k]);
 }
 
-function inc({cpu, src}, store) {
-  store(increment(...args));
+function inc({cpu, src}) {
+  cpu.store(increment({cpu, src}));
 }
 
-const inx = (...args) => incrementRef(...args, 'x');
-const iny = (...args) => incrementRef(...args, 'y');
+const inx = (...args) => incrementIx(...args, 'x');
+const iny = (...args) => incrementIx(...args, 'y');
 
 function jmp({cpu, src}) {
-  cpu.regs.pc = src;
+  cpu.pc = src;
 }
 
 function jsr({cpu, src}) {
-  cpu.regs.pc--;
-  cpu.push(cpu.regs.pc); // Push return address onto the stack.
-  cpu.regs.pc = src;
+  cpu.pc--;
+  cpu.push(cpu.pc); // Push return address onto the stack.
+  cpu.pc = src;
 }
 
-function load({cpu, src}, ref) {
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  cpu.reg[ref] = src;
+function load({cpu, src}, k) {
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu[k] = src;
 }
 
 const lda = (...args) => load(...args, 'a');
 const ldx = (...args) => load(...args, 'x');
 const ldy = (...args) => load(...args, 'y');
 
-function lsr({cpu, src}, store) {
-  cpu.flags.carry(src & 0x01);
+function lsr({cpu, src}) {
+  cpu.flag.carry(src & 0x01);
   src >>= 1;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function nop() {};
 
 function ora({cpu, src}) {
-  src |= cpu.regs.a;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  cpu.regs.a = src;
+  src |= cpu.a;
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.a = src;
 }
 
 function pha({cpu}) {
-  cpu.push(cpu.regs.a);
+  cpu.push(cpu.a);
 }
 
 function php({cpu}) {
-  cpu.push(cpu.regs.stat);
+  cpu.push(cpu.stat);
 }
 
 function pla({cpu}) {
   const src = cpu.pull();
-  cpu.flags.sign(src); // Change sign and zero flag accordingly.
-  cpu.flags.zero(src);
+  cpu.flag.sign(src); // Change sign and zero flag accordingly.
+  cpu.flag.zero(src);
 }
 
 function plp({cpu, src}) {
-  cpu.regs.stat = cpu.pull();
+  cpu.stat = cpu.pull();
 }
 
 function rol({cpu, src}) {
   src <<= 1;
-  if (cpu.flags.carry()) src |= 0x1;
-  cpu.flags.carry(src > 0xff);
+  if (cpu.flag.carry()) src |= 0x1;
+  cpu.flag.carry(src > 0xff);
   src &= 0xff;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function ror({cpu, src}) {
-  if (cpu.flags.carry()) src |= 0x100;
-  cpu.flags.carry(src & 0x01);
+  if (cpu.flag.carry()) src |= 0x100;
+  cpu.flag.carry(src & 0x01);
   src >>= 1;
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  store(src); // src in memory or accumulator depending on addressing mode.
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu.store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function rti({cpu, src}) {
-  cpu.reg.stat = cpu.pull();
+  cpu.stat = cpu.pull();
   cpu.pc = cpu.pull(); // Load return address from stack.
 }
 
@@ -245,33 +246,34 @@ function rts({cpu, src}) {
 }
 
 function sbc({cpu, src}) {
-  const carry = cpu.flags.carry() ? 0 : 1;
-  let temp = cpu.reg.a - src - carry;
-  cpu.flags.sign(temp);
-  cpu.flags.zero(temp & 0xff); // Sign and Zero are invalid in decimal mode.
-  cpu.flags.overflow(((cpu.reg.a ^ temp) & 0x80) && ((cpu.reg.a ^ src) & 0x80));
-  if (cpu.flags.decimal()) {
-    if (((cpu.reg.a & 0xf) - carry) < (src & 0xf)) { // EP
+  const carry = cpu.flag.carry() ? 0 : 1;
+  let temp = cpu.a - src - carry;
+  cpu.flag.sign(temp);
+  cpu.flag.zero(temp & 0xff); // Sign and Zero are invalid in decimal mode.
+  cpu.flag.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ src) & 0x80));
+  if (cpu.flag.decimal()) {
+    if (((cpu.a & 0xf) - carry) < (src & 0xf)) { // EP
       temp -= 6;
     }
     if (temp > 0x99) {
       temp -= 0x60;
     }
   }
-  cpu.flags.carry(temp < 0x100);
-  cpu.reg.a = (temp & 0xff);
+  cpu.flag.carry(temp < 0x100);
+  cpu.a = (temp & 0xff);
 }
 
 const set = function(flag) {
   flag(true);
 };
 
-const sec = ({cpu}) => set(cpu.flags.carry);
-const sed = ({cpu}) => set(cpu.flags.decimal);
-const sei = ({cpu}) => set(cpu.flags.interrupt);
+const sec = ({cpu}) => set(cpu.flag.carry);
+const sed = ({cpu}) => set(cpu.flag.decimal);
+const sei = ({cpu}) => set(cpu.flag.interrupt);
 
-const store = function({src}, store) {
-  store(address, src)
+const store = function({cpu, src}) {
+  // TODO(nakardo): where's address coming from?
+  cpu.store(address, src);
 }
 
 const sta = (...args) => store(...args);
@@ -279,10 +281,10 @@ const stx = (...args) => store(...args);
 const sty = (...args) => store(...args);
 
 const transfer = function ({cpu}, from, to) {
-  const src = cpu.reg[from];
-  cpu.flags.sign(src);
-  cpu.flags.zero(src);
-  cpu.reg[to] = src;
+  const src = cpu[from];
+  cpu.flag.sign(src);
+  cpu.flag.zero(src);
+  cpu[to] = src;
 }
 
 const tax = (...args) => transfer(...args, 'a', 'x');
@@ -292,8 +294,8 @@ const tya = (...args) => transfer(...args, 'y', 'a');
 const tsx = (...args) => transfer(...args, 'sp', 'x');
 const txs = (...args) => transfer(...args, 'x', 'sp');
 
-const inst = {
-  exec: [
+const instSet = {
+  fn: [
     /*       00   01   02   03   04   05   06   07   08   09   0A   0B   0C   0D   0E   0F   */
     /* 00 */ brk, ora, unk, unk, unk, ora, asl, unk, php, ora, asl, unk, unk, ora, asl, unk,
     /* 10 */ bpl, ora, unk, unk, unk, ora, asl, unk, clc, ora, unk, unk, unk, ora, asl, unk,
@@ -331,7 +333,7 @@ const inst = {
     /* E0 */ 5,  7,  5,  7,  11, 11, 11, 11, 6,  5,  6,  5,  1,  1,  1,  1,
     /* F0 */ 10, 9,  6,  9,  12, 12, 12, 12, 6,  3,  6,  3,  2,  2,  2,  2,
   ],
-  bytes: [
+  size: [
     /*       00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F */
     /* 00 */ 1, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /* 10 */ 2, 2, 0, 0, 2, 2, 2, 0, 1, 3, 1, 0, 3, 3, 3, 0,
@@ -391,62 +393,80 @@ const inst = {
 };
 
 const mmu = {
-  memory: new Uint8Array(),
+  rom: new Uint8Array(RomData, 0, 0x10000),
   readByte: function(addr) {
-    return this.memory[addr & 0xffff];
+    return this.rom[addr & 0xffff];
   },
   readWord: function(addr) {
     return this.readByte(addr) | this.readByte(++addr) << 8;
   },
 };
 
+const FLAG_SIGN      = 1 << 7;
+const FLAG_OVERFLOW  = 1 << 6;
+const FLAG_BREAK     = 1 << 4;
+const FLAG_DECIMAL   = 1 << 3;
+const FLAG_INTERRUPT = 1 << 2;
+const FLAG_ZERO      = 1 << 1;
+const FLAG_CARRY     = 1;
+
 const cpu = {
-  reg: {
-    a: 0,
-    x: 0,
-    y: 0,
-    stat: 0,
-    pc: 0,
-    sp: 0,
-    t: 0,
-    flags: {
-      s: false,
-      v: false,
-      b: false,
-      d: false,
-      i: false,
-      z: false,
-      c: false,
+  a: 0,
+  x: 0,
+  y: 0,
+  stat: 0,
+  pc: 0,
+  sp: 0,
+  t: 0,
+  flag: {
+    sign: (val) => {
+      if (val !== undefined) {
+        if (val & FLAG_SIGN) cpu.stat |= FLAG_SIGN;
+        else cpu.stat &= ~FLAG_SIGN;
+      }
+      return !!(cpu.stat & FLAG_SIGN);
     },
-  },
-  flags: {
-    sign: function(val) {
-      if (val !== undefined) cpu.reg.flags.s = val & 7 > 0;
-      return cpu.reg.flags.s;
+    overflow: (cond) => {
+      if (cond !== undefined) {
+        if (cond) cpu.stat |= FLAG_OVERFLOW;
+        else cpu.stat &= ~FLAG_OVERFLOW;
+      }
+      return !!(cpu.stat & FLAG_OVERFLOW);
     },
-    overflow: function(val) {
-      if (val !== undefined) cpu.reg.flags.v = val == true;
-      return cpu.reg.flags.v;
+    break: (cond) => {
+      if (cond !== undefined) {
+        if (cond) cpu.stat |= FLAG_BREAK;
+        else cpu.stat &= ~FLAG_BREAK;
+      }
+      return !!(cpu.stat & FLAG_BREAK);
     },
-    break: function(val) {
-      if (val !== undefined) cpu.reg.flags.b = val == true;
-      return cpu.reg.flags.b;
+    decimal: (cond) => {
+      if (cond !== undefined) {
+        if (cond) cpu.stat |= FLAG_DECIMAL;
+        else cpu.stat &= ~FLAG_DECIMAL;
+      }
+      return !!(cpu.stat & FLAG_DECIMAL);
     },
-    decimal: function(val) {
-      if (val !== undefined) cpu.reg.flags.d = val == true;
-      return cpu.reg.flags.d;
+    interrupt: (cond) => {
+      if (cond !== undefined) {
+        if (cond) cpu.stat |= FLAG_INTERRUPT;
+        else cpu.stat &= ~FLAG_INTERRUPT;
+      }
+      return !!(cpu.stat & FLAG_INTERRUPT);
     },
-    interrupt: function(val) {
-      if (val !== undefined) cpu.reg.flags.i = val == true;
-      return cpu.reg.flags.i;
+    zero: (val) => {
+      if (val !== undefined) {
+        if (val == 0) cpu.stat |= FLAG_ZERO;
+        else cpu.stat &= ~FLAG_ZERO;
+      }
+      return !!(cpu.stat & FLAG_ZERO);
     },
-    zero: function(val) {
-      if (val !== undefined) cpu.reg.flags.z = val == 0;
-      return cpu.reg.flags.z;
-    },
-    carry: function(val) {
-      if (val !== undefined) cpu.reg.flags.c = val > 0;
-      return cpu.reg.flags.c;
+    carry: (cond) => {
+      if (cond !== undefined) {
+        if (cond) cpu.stat |= FLAG_CARRY;
+        else cpu.stat &= ~FLAG_CARRY;
+      }
+      return !!(cpu.stat & FLAG_CARRY);
     },
   },
   push: function(src) {
@@ -456,28 +476,28 @@ const cpu = {
     console.log(`store: 0x${src.toString(16)}`);
   },
   tick: function() {
-    const opcode = mmu.readByte(this.reg.pc);
-    let operand;
-    switch (inst.mode[opcode]) {
+    const opcode = mmu.readByte(this.pc);
+    let src;
+    switch (instSet.mode[opcode]) {
       case 0: // Accumulator
-        operand = cpu.reg.a;
+        src = cpu.a;
         break;
       case 1: // Immediate
-        operand = mmu.readByte(cpu.reg.pc + 1);
+        src = mmu.readByte(cpu.pc + 1);
         break;
       case 2: { // Relative
-        let byte = mmu.readByte(cpu.reg.pc + 1);
-        operand = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
+        let byte = mmu.readByte(cpu.pc + 1);
+        src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
         break;
       }
       case 3: // Absolute
-        operand = mmu.readWord(cpu.reg.pc + 1);
+        src = mmu.readWord(cpu.pc + 1);
         break;
       case 4: // Zero-Page
-        operand = mmu.readByte(cpu.reg.pc + 1);
+        src = mmu.readByte(cpu.pc + 1);
         break;
       case 5: // Indirect
-        operand = mmu.readWord(mmu.readWord(cpu.reg.pc + 1));
+        src = mmu.readWord(mmu.readWord(cpu.pc + 1));
         break;
       case 6: // Absolute Indexed
         // X or Y
@@ -486,13 +506,10 @@ const cpu = {
         // Same as above
         break;
     }
-    inst.exec[opcode]({cpu: this, mmu}, this.store);
-    console.log(cpu.reg.pc);
-    cpu.reg.pc += inst.cycles[opcode];
+    console.log(cpu.pc, opcode.toString(16));
+    instSet.fn[opcode]({cpu: this, mmu, src});
+    cpu.pc += instSet.size[opcode];
   },
 };
 
-fs.readFile('./roms/mario.nes', (err, data) => {
-  mmu.memory = new Uint8Array(data, 0, 0x10000);
-  setInterval(() => cpu.tick(), 1 / 500);
-});
+setInterval(() => cpu.tick(), 1 / 500);
