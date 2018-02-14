@@ -542,7 +542,7 @@ const cpu = {
 
     console.log(cpu.pc, opcode.toString(16));
 
-    instSet.fn[opcode]({cpu: cpu, mmu, src, store});
+    instSet.fn[opcode]({cpu, mmu, src, store});
     cpu.pc += instSet.size[opcode];
   },
 };
