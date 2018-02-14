@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const debug = require('debug')('nes');
 
 function unk() {
   throw new Error('Unknown instruction');
@@ -477,14 +478,14 @@ const cpu = {
     },
   },
   push: (src) => {
-    console.log(`push: 0x${src.toString(16)}`);
+    debug(`push: 0x${src.toString(16)}`);
   },
   tick: () => {
     const {mode, exec, size, cycles} = inst;
     const opcode = mmu.readByte(cpu.pc);
     const next = cpu.pc + 1;
 
-    console.log(cpu.pc, opcode.toString(16));
+    debug(`pc: 0x${cpu.pc}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
     let branchCycles = 0;
