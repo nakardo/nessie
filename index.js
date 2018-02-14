@@ -280,8 +280,8 @@ const tya = (...args) => transfer(...args, 'y', 'a');
 const tsx = (...args) => transfer(...args, 'sp', 'x');
 const txs = (...args) => transfer(...args, 'x', 'sp');
 
-const instSet = {
-  fn: [
+const inst = {
+  exec: [
     /*       00   01   02   03   04   05   06   07   08   09   0A   0B   0C   0D   0E   0F   */
     /* 00 */ brk, ora, unk, unk, unk, ora, asl, unk, php, ora, asl, unk, unk, ora, asl, unk,
     /* 10 */ bpl, ora, unk, unk, unk, ora, asl, unk, clc, ora, unk, unk, unk, ora, asl, unk,
@@ -413,8 +413,8 @@ const MODE_IDX_Y          = 7;
 const MODE_ZEROPAGE_IDX_X = 8;
 const MODE_ZEROPAGE_IDX_Y = 9;
 const MODE_IND            = 10;
-const MODE_PREIDX_X_IND   = 11;
-const MODE_POSTIDX_Y_IND  = 12;
+const MODE_PRE_IDX_X_IND  = 11;
+const MODE_POST_IDX_Y_IND = 12;
 const MODE_REL            = 13;
 
 const cpu = {
@@ -480,11 +480,15 @@ const cpu = {
     console.log(`push: 0x${src.toString(16)}`);
   },
   tick: () => {
+    const {mode, exec, size, cycles} = inst;
+    const branchCycles = 0;
     const opcode = mmu.readByte(cpu.pc);
     const next = cpu.pc + 1;
 
+    console.log(cpu.pc, opcode.toString(16));
+
     let src, store;
-    switch (instSet.mode[opcode]) {
+    switch (mode[opcode]) {
       case MODE_IMM:
         src = mmu.readByte(next);
         store = (val) => mmu.writeByte(val, next);
@@ -523,11 +527,11 @@ const cpu = {
         src = mmu.readWord(mmu.readWord(next));
         store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_PREIDX_X_IND:
+      case MODE_PRE_IDX_X_IND:
         src = mmu.readWord(mmu.readByte(next + cpu.x));
         store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_POSTIDX_Y_IND:
+      case MODE_POST_IDX_Y_IND:
         src = mmu.readWord(mmu.readByte(next)) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
         break;
@@ -537,13 +541,12 @@ const cpu = {
         store = (val) => mmu.writeByte(val, src);
         break;
       }
-      default: break;
+      default: throw new Error('Unknown addressing mode');
     }
+    exec[opcode]({cpu, mmu, src, store});
 
-    console.log(cpu.pc, opcode.toString(16));
-
-    instSet.fn[opcode]({cpu, mmu, src, store});
-    cpu.pc += instSet.size[opcode];
+    cpu.pc += size[opcode];
+    cpu.t = cycles[opcode] + branchCycles;
   },
 };
 
