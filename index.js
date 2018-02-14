@@ -402,13 +402,27 @@ const mmu = {
   },
 };
 
-const FLAG_SIGN      = 1 << 7;
-const FLAG_OVERFLOW  = 1 << 6;
-const FLAG_BREAK     = 1 << 4;
-const FLAG_DECIMAL   = 1 << 3;
-const FLAG_INTERRUPT = 1 << 2;
-const FLAG_ZERO      = 1 << 1;
-const FLAG_CARRY     = 1;
+const FLAG_SIGN           = 1 << 7;
+const FLAG_OVERFLOW       = 1 << 6;
+const FLAG_BREAK          = 1 << 4;
+const FLAG_DECIMAL        = 1 << 3;
+const FLAG_INTERRUPT      = 1 << 2;
+const FLAG_ZERO           = 1 << 1;
+const FLAG_CARRY          = 1;
+
+const MODE_IMM            = 1;
+const MODE_ABS            = 2;
+const MODE_ZEROPAGE_ABS   = 3;
+const MODE_IMP            = 4;
+const MODE_ACC            = 5;
+const MODE_IDX_X          = 6;
+const MODE_IDX_Y          = 7;
+const MODE_ZEROPAGE_IDX_X = 8;
+const MODE_ZEROPAGE_IDX_Y = 9;
+const MODE_IND            = 10;
+const MODE_PREIDX_X_IND   = 11;
+const MODE_POSTIDX_Y_IND  = 12;
+const MODE_REL            = 13;
 
 const cpu = {
   a: 0,
@@ -477,37 +491,85 @@ const cpu = {
   },
   tick: function() {
     const opcode = mmu.readByte(this.pc);
+    const mode = instSet.mode[opcode];
+    const fn = instSet.fn[opcode];
+
     let src;
-    switch (instSet.mode[opcode]) {
-      case 0: // Accumulator
-        src = cpu.a;
+    switch (mode) {
+      case MODE_IMM:
+        src = mmu.readByte(this.pc + 1);
         break;
-      case 1: // Immediate
-        src = mmu.readByte(cpu.pc + 1);
+      case MODE_ABS:
+        src = mmu.readWord(this.pc + 1);
         break;
-      case 2: { // Relative
-        let byte = mmu.readByte(cpu.pc + 1);
+      case MODE_ZEROPAGE_ABS:
+        src = mmu.readByte(this.pc + 1);
+        break;
+      case MODE_IMP:
+        break; // Nothing to do here.
+      case MODE_ACC:
+        src = this.a;
+        break;
+      case MODE_IDX_X:
+        src = mmu.readWord(this.pc + 1) + this.x;
+        break;
+      case MODE_IDX_Y:
+        src = mmu.readWord(this.pc + 1) + this.y;
+        break;
+      case MODE_ZEROPAGE_IDX_X:
+        src = mmu.readByte(this.pc + 1) + this.x;
+        break;
+      case MODE_ZEROPAGE_IDX_Y:
+        src = mmu.readByte(this.pc + 1) + this.y;
+        break;
+      case MODE_IND:
+        src = mmu.readWord(mmu.readWord(this.pc + 1));
+        break;
+      case MODE_PREIDX_X_IND:
+        src = mmu.readWord(mmu.readByte(this.pc + 1 + this.x));
+        break;
+      case MODE_POSTIDX_Y_IND:
+        src = mmu.readWord(mmu.readByte(this.pc + 1)) + this.y;
+        break;
+      case MODE_REL: {
+        const byte = mmu.readByte(cpu.pc + 1);
         src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
         break;
       }
-      case 3: // Absolute
-        src = mmu.readWord(cpu.pc + 1);
-        break;
-      case 4: // Zero-Page
-        src = mmu.readByte(cpu.pc + 1);
-        break;
-      case 5: // Indirect
-        src = mmu.readWord(mmu.readWord(cpu.pc + 1));
-        break;
-      case 6: // Absolute Indexed
-        // X or Y
-        break;
-      case 7: // Zero-Page Indexed
-        // Same as above
+      default:
         break;
     }
+
+    // switch (instSet.mode[opcode]) {
+    //   case 0: // Accumulator
+    //     src = cpu.a;
+    //     break;
+    //   case 1: // Immediate
+    //     src = mmu.readByte(cpu.pc + 1);
+    //     break;
+    //   case 2: { // Relative
+    //     let byte = mmu.readByte(cpu.pc + 1);
+    //     src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
+    //     break;
+    //   }
+    //   case 3: // Absolute
+    //     src = mmu.readWord(cpu.pc + 1);
+    //     break;
+    //   case 4: // Zero-Page
+    //     src = mmu.readByte(cpu.pc + 1);
+    //     break;
+    //   case 5: // Indirect
+    //     src = mmu.readWord(mmu.readWord(cpu.pc + 1));
+    //     break;
+    //   case 6: // Absolute Indexed
+    //     // X or Y
+    //     break;
+    //   case 7: // Zero-Page Indexed
+    //     // Same as above
+    //     break;
+    // }
     console.log(cpu.pc, opcode.toString(16));
-    instSet.fn[opcode]({cpu: this, mmu, src});
+    fn({cpu: this, mmu, src});
     cpu.pc += instSet.size[opcode];
   },
 };
