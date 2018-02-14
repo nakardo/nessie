@@ -271,14 +271,9 @@ const sec = ({cpu}) => set(cpu.flag.carry);
 const sed = ({cpu}) => set(cpu.flag.decimal);
 const sei = ({cpu}) => set(cpu.flag.interrupt);
 
-const store = function({cpu, src}) {
-  // TODO(nakardo): where's address coming from?
-  cpu.store(address, src);
-}
-
-const sta = (...args) => store(...args);
-const stx = (...args) => store(...args);
-const sty = (...args) => store(...args);
+const sta = ({cpu, store}) => store(cpu.a);
+const stx = ({cpu, store}) => store(cpu.x);
+const sty = ({cpu, store}) => store(cpu.y);
 
 const transfer = function ({cpu}, from, to) {
   const src = cpu[from];
