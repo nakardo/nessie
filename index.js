@@ -56,13 +56,13 @@ function and({cpu, src}) {
   cpu.a = src;
 }
 
-function asl({cpu, src}) {
+function asl({cpu, src, store}) {
   cpu.flag.carry(src & 0x80);
   src <<= 1;
   src &= 0xff;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  cpu.store(src); // src in memory or accumulator depending on addressing mode.
+  store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function branch({cpu, src}, condition) {
@@ -130,8 +130,8 @@ function decrementIx({cpu, src}, k) {
   cpu[k] = decrement({cpu, src}, cpu[k]);
 }
 
-function dec({cpu, src}) {
-  cpu.store(decrement({cpu, src}));
+function dec({cpu, src, store}) {
+  store(decrement({cpu, src}));
 }
 
 const dex = (...args) => decrementIx(...args, 'x');
@@ -155,8 +155,8 @@ function incrementIx({cpu, src}, k) {
   cpu[k] = increment({cpu, src}, cpu[k]);
 }
 
-function inc({cpu, src}) {
-  cpu.store(increment({cpu, src}));
+function inc({cpu, src, store}) {
+  store(increment({cpu, src}));
 }
 
 const inx = (...args) => incrementIx(...args, 'x');
@@ -182,12 +182,12 @@ const lda = (...args) => load(...args, 'a');
 const ldx = (...args) => load(...args, 'x');
 const ldy = (...args) => load(...args, 'y');
 
-function lsr({cpu, src}) {
+function lsr({cpu, src, store}) {
   cpu.flag.carry(src & 0x01);
   src >>= 1;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  cpu.store(src); // src in memory or accumulator depending on addressing mode.
+  store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function nop() {};
@@ -217,23 +217,23 @@ function plp({cpu, src}) {
   cpu.stat = cpu.pull();
 }
 
-function rol({cpu, src}) {
+function rol({cpu, src, store}) {
   src <<= 1;
   if (cpu.flag.carry()) src |= 0x1;
   cpu.flag.carry(src > 0xff);
   src &= 0xff;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  cpu.store(src); // src in memory or accumulator depending on addressing mode.
+  store(src); // src in memory or accumulator depending on addressing mode.
 }
 
-function ror({cpu, src}) {
+function ror({cpu, src, store}) {
   if (cpu.flag.carry()) src |= 0x100;
   cpu.flag.carry(src & 0x01);
   src >>= 1;
   cpu.flag.sign(src);
   cpu.flag.zero(src);
-  cpu.store(src); // src in memory or accumulator depending on addressing mode.
+  store(src); // src in memory or accumulator depending on addressing mode.
 }
 
 function rti({cpu, src}) {
@@ -486,58 +486,66 @@ const cpu = {
   push: function(src) {
     console.log(`push: 0x${src.toString(16)}`);
   },
-  store: function(src) {
-    console.log(`store: 0x${src.toString(16)}`);
-  },
   tick: function() {
     const opcode = mmu.readByte(this.pc);
-    const mode = instSet.mode[opcode];
-    const fn = instSet.fn[opcode];
+    const next = cpu.pc + 1;
 
-    let src;
-    switch (mode) {
+    let src, store;
+    switch (instSet.mode[opcode]) {
       case MODE_IMM:
-        src = mmu.readByte(this.pc + 1);
+        src = mmu.readByte(next);
+        store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_ABS:
         src = mmu.readWord(this.pc + 1);
+        store = (val) => mmu.writeWord(val, next);
         break;
       case MODE_ZEROPAGE_ABS:
-        src = mmu.readByte(this.pc + 1);
+        src = mmu.readByte(next);
+        store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_IMP:
         break; // Nothing to do here.
       case MODE_ACC:
         src = this.a;
+        store = function(val) { this.a = val; };
         break;
-      case MODE_IDX_X:
-        src = mmu.readWord(this.pc + 1) + this.x;
+      case MODE_IDX_X: {
+        src = mmu.readWord(next) + this.x;
+        store = (val) => mmu.writeByte(val, src);
         break;
+      }
       case MODE_IDX_Y:
-        src = mmu.readWord(this.pc + 1) + this.y;
+        src = mmu.readWord(next) + this.y;
+        store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_ZEROPAGE_IDX_X:
-        src = mmu.readByte(this.pc + 1) + this.x;
+        src = mmu.readByte(next) + this.x;
+        store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_ZEROPAGE_IDX_Y:
-        src = mmu.readByte(this.pc + 1) + this.y;
+        src = mmu.readByte(next) + this.y;
+        store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_IND:
-        src = mmu.readWord(mmu.readWord(this.pc + 1));
+        src = mmu.readWord(mmu.readWord(next));
+        store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_PREIDX_X_IND:
-        src = mmu.readWord(mmu.readByte(this.pc + 1 + this.x));
+        src = mmu.readWord(mmu.readByte(next + this.x));
+        store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_POSTIDX_Y_IND:
-        src = mmu.readWord(mmu.readByte(this.pc + 1)) + this.y;
+        src = mmu.readWord(mmu.readByte(next)) + this.y;
+        store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_REL: {
         const byte = mmu.readByte(cpu.pc + 1);
         src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
+        store = (val) => mmu.writeByte(val, src);
         break;
       }
-      default:
-        break;
+      default: break;
     }
 
     // switch (instSet.mode[opcode]) {
@@ -569,7 +577,7 @@ const cpu = {
     //     break;
     // }
     console.log(cpu.pc, opcode.toString(16));
-    fn({cpu: this, mmu, src});
+    instSet.fn[opcode]({cpu: this, mmu, src, store});
     cpu.pc += instSet.size[opcode];
   },
 };
