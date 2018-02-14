@@ -379,7 +379,8 @@ const instSet = {
 };
 
 const mmu = {
-  rom: new Uint8Array(fs.readFileSync('./roms/mario.nes'), 0, 0x10000),
+  ram: new Uint8Array(0x800),
+  rom: new Uint8Array(fs.readFileSync('./roms/mario.nes'), 0, 0x4000),
   readByte: (addr) => {
     return mmu.rom[addr & 0xffff];
   },
