@@ -395,27 +395,27 @@ const mmu = {
   },
 };
 
-const FLAG_SIGN           = 1 << 7;
-const FLAG_OVERFLOW       = 1 << 6;
-const FLAG_BREAK          = 1 << 4;
-const FLAG_DECIMAL        = 1 << 3;
-const FLAG_INTERRUPT      = 1 << 2;
-const FLAG_ZERO           = 1 << 1;
-const FLAG_CARRY          = 1;
+const FLAG_SIGN        = 1 << 7;
+const FLAG_OVERFLOW    = 1 << 6;
+const FLAG_BREAK       = 1 << 4;
+const FLAG_DECIMAL     = 1 << 3;
+const FLAG_INTERRUPT   = 1 << 2;
+const FLAG_ZERO        = 1 << 1;
+const FLAG_CARRY       = 1;
 
-const MODE_IMM            = 1;
-const MODE_ABS            = 2;
-const MODE_ZEROPAGE_ABS   = 3;
-const MODE_IMP            = 4;
-const MODE_ACC            = 5;
-const MODE_IDX_X          = 6;
-const MODE_IDX_Y          = 7;
-const MODE_ZEROPAGE_IDX_X = 8;
-const MODE_ZEROPAGE_IDX_Y = 9;
-const MODE_IND            = 10;
-const MODE_PRE_IDX_X_IND  = 11;
-const MODE_POST_IDX_Y_IND = 12;
-const MODE_REL            = 13;
+const MODE_ABS         = 1;
+const MODE_ABS_X       = 2;
+const MODE_ABS_Y       = 3;
+const MODE_ACC         = 4;
+const MODE_IMM         = 5;
+const MODE_IMP         = 6;
+const MODE_IDX_IND     = 7;
+const MODE_IND         = 8;
+const MODE_IND_IDX     = 9;
+const MODE_REL         = 10;
+const MODE_ZERO_PAGE   = 11;
+const MODE_ZERO_PAGE_X = 12;
+const MODE_ZERO_PAGE_Y = 13;
 
 const cpu = {
   a: 0,
@@ -497,7 +497,7 @@ const cpu = {
         src = mmu.readWord(next);
         store = (val) => mmu.writeWord(val, next);
         break;
-      case MODE_ZEROPAGE_ABS:
+      case MODE_ZERO_PAGE:
         src = mmu.readByte(next);
         store = (val) => mmu.writeByte(val, next);
         break;
@@ -507,19 +507,19 @@ const cpu = {
         src = cpu.a;
         store = (val) => { cpu.a = val; };
         break;
-      case MODE_IDX_X:
+      case MODE_ABS_X:
         src = mmu.readWord(next) + cpu.x;
         store = (val) => mmu.writeByte(val, src);
         break;
-      case MODE_IDX_Y:
+      case MODE_ABS_Y:
         src = mmu.readWord(next) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_ZEROPAGE_IDX_X:
+      case MODE_ZERO_PAGE_X:
         src = mmu.readByte(next) + cpu.x;
         store = (val) => mmu.writeByte(val, src);
         break;
-      case MODE_ZEROPAGE_IDX_Y:
+      case MODE_ZERO_PAGE_Y:
         src = mmu.readByte(next) + cpu.y;
         store = (val) => mmu.writeByte(val, src);
         break;
@@ -527,11 +527,11 @@ const cpu = {
         src = mmu.readWord(mmu.readWord(next));
         store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_PRE_IDX_X_IND:
+      case MODE_IDX_IND:
         src = mmu.readWord(mmu.readByte(next + cpu.x));
         store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_POST_IDX_Y_IND:
+      case MODE_IND_IDX:
         src = mmu.readWord(mmu.readByte(next)) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
         break;
