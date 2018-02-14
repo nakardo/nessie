@@ -381,11 +381,17 @@ const instSet = {
 
 const mmu = {
   rom: new Uint8Array(RomData, 0, 0x10000),
-  readByte: function(addr) {
-    return this.rom[addr & 0xffff];
+  readByte: (addr) => {
+    return mmu.rom[addr & 0xffff];
   },
-  readWord: function(addr) {
-    return this.readByte(addr) | this.readByte(++addr) << 8;
+  readWord: (addr) => {
+    return mmu.readByte(addr) | mmu.readByte(++addr) << 8;
+  },
+  writeByte: (val, addr) => {
+    return mmu.rom[addr & 0xffff] = val;
+  },
+  writeWord: (val, addr) => {
+    return mmu.writeByte(addr, val) | mmu.writeByte(++addr, val >> 8) << 8;
   },
 };
 
@@ -470,11 +476,11 @@ const cpu = {
       return !!(cpu.stat & FLAG_CARRY);
     },
   },
-  push: function(src) {
+  push: (src) => {
     console.log(`push: 0x${src.toString(16)}`);
   },
-  tick: function() {
-    const opcode = mmu.readByte(this.pc);
+  tick: () => {
+    const opcode = mmu.readByte(cpu.pc);
     const next = cpu.pc + 1;
 
     let src, store;
@@ -484,7 +490,7 @@ const cpu = {
         store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_ABS:
-        src = mmu.readWord(this.pc + 1);
+        src = mmu.readWord(cpu.pc + 1);
         store = (val) => mmu.writeWord(val, next);
         break;
       case MODE_ZEROPAGE_ABS:
@@ -494,24 +500,24 @@ const cpu = {
       case MODE_IMP:
         break; // Nothing to do here.
       case MODE_ACC:
-        src = this.a;
-        store = function(val) { this.a = val; };
+        src = cpu.a;
+        store = function(val) { cpu.a = val; };
         break;
       case MODE_IDX_X: {
-        src = mmu.readWord(next) + this.x;
+        src = mmu.readWord(next) + cpu.x;
         store = (val) => mmu.writeByte(val, src);
         break;
       }
       case MODE_IDX_Y:
-        src = mmu.readWord(next) + this.y;
+        src = mmu.readWord(next) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_ZEROPAGE_IDX_X:
-        src = mmu.readByte(next) + this.x;
+        src = mmu.readByte(next) + cpu.x;
         store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_ZEROPAGE_IDX_Y:
-        src = mmu.readByte(next) + this.y;
+        src = mmu.readByte(next) + cpu.y;
         store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_IND:
@@ -519,11 +525,11 @@ const cpu = {
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_PREIDX_X_IND:
-        src = mmu.readWord(mmu.readByte(next + this.x));
+        src = mmu.readWord(mmu.readByte(next + cpu.x));
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_POSTIDX_Y_IND:
-        src = mmu.readWord(mmu.readByte(next)) + this.y;
+        src = mmu.readWord(mmu.readByte(next)) + cpu.y;
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_REL: {
@@ -534,8 +540,10 @@ const cpu = {
       }
       default: break;
     }
+
     console.log(cpu.pc, opcode.toString(16));
-    instSet.fn[opcode]({cpu: this, mmu, src, store});
+
+    instSet.fn[opcode]({cpu: cpu, mmu, src, store});
     cpu.pc += instSet.size[opcode];
   },
 };
