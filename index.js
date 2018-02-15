@@ -28,40 +28,40 @@ function unk() {
  * * Add 1 if page boundary is crossed.
  */
 function adc({cpu, src}) {
-  const carry = cpu.flag.carry() ? 1 : 0;
+  const carry = cpu.carry() ? 1 : 0;
   let temp = src + cpu.a + carry;
-  cpu.flag.zero(temp & 0xff);
-  if (cpu.flag.decimal()) {
+  cpu.zero(temp & 0xff);
+  if (cpu.decimal()) {
     if (((cpu.a & 0xf) + (src & 0xf) + carry) > 9) {
       temp += 6;
     }
-    cpu.flag.sign(temp);
-    cpu.flag.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
+    cpu.sign(temp);
+    cpu.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
     if (temp > 0x99) {
       temp += 96;
     }
-    cpu.flag.carry(temp > 0x99);
+    cpu.carry(temp > 0x99);
   } else {
-    cpu.flag.sign(temp);
-    cpu.flag.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
-    cpu.flag.carry(temp > 0xff);
+    cpu.sign(temp);
+    cpu.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
+    cpu.carry(temp > 0xff);
   }
   cpu.a = temp & 0xff;
 }
 
 function and({cpu, src}) {
   src &= cpu.a;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   cpu.a = src;
 }
 
 function asl({cpu, src, store}) {
-  cpu.flag.carry(src & 0x80);
+  cpu.carry(src & 0x80);
   src <<= 1;
   src &= 0xff;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   store(src);
 }
 
@@ -73,42 +73,42 @@ function branch({cpu, src}, cond) {
   }
 }
 
-const bcs = ({cpu, src}) => branch({cpu, src}, cpu.flag.carry());
-const beq = ({cpu, src}) => branch({cpu, src}, cpu.flag.zero());
-const bmi = ({cpu, src}) => branch({cpu, src}, cpu.flag.sign());
+const bcs = ({cpu, src}) => branch({cpu, src}, cpu.carry());
+const beq = ({cpu, src}) => branch({cpu, src}, cpu.zero());
+const bmi = ({cpu, src}) => branch({cpu, src}, cpu.sign());
 
-const bcc = ({cpu, src}) => branch({cpu, src}, !cpu.flag.carry());
-const bne = ({cpu, src}) => branch({cpu, src}, !cpu.flag.zero());
-const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.flag.sign());
+const bcc = ({cpu, src}) => branch({cpu, src}, !cpu.carry());
+const bne = ({cpu, src}) => branch({cpu, src}, !cpu.zero());
+const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
 
-const bvc = ({cpu, src}) => branch({cpu, src}, !cpu.flag.overflow());
-const bvs = ({cpu, src}) => branch({cpu, src}, cpu.flag.overflow());
+const bvc = ({cpu, src}) => branch({cpu, src}, !cpu.overflow());
+const bvs = ({cpu, src}) => branch({cpu, src}, cpu.overflow());
 
 function bit({cpu, src}) {
-  cpu.flag.sign(src);
-  cpu.flag.overflow(0x40 & src);
-  cpu.flag.zero(src & cpu.a);
+  cpu.sign(src);
+  cpu.overflow(0x40 & src);
+  cpu.zero(src & cpu.a);
 }
 
 function brk({cpu, mmu, src}) {
   cpu.pc++;
   cpu.push(cpu.pc);
-  cpu.flag.break(true);
+  cpu.break(true);
   cpu.push(cpu.stat);
-  cpu.flag.interrupt(true);
+  cpu.interrupt(true);
   cpu.pc = mmu.readWord(0xfffe);
 }
 
-const clc = ({cpu}) => cpu.flag.carry(false);
-const cld = ({cpu}) => cpu.flag.decimal(false);
-const cli = ({cpu}) => cpu.flag.interrupt(false);
-const clv = ({cpu}) => cpu.flag.overflow(false);
+const clc = ({cpu}) => cpu.carry(false);
+const cld = ({cpu}) => cpu.decimal(false);
+const cli = ({cpu}) => cpu.interrupt(false);
+const clv = ({cpu}) => cpu.overflow(false);
 
 function compare({cpu, src}, value) {
   src = value - src;
-  cpu.flag.carry(src < 0x100);
-  cpu.flag.sign(src);
-  cpu.flag.zero(src &= 0xff);
+  cpu.carry(src < 0x100);
+  cpu.sign(src);
+  cpu.zero(src &= 0xff);
 }
 
 const cmp = ({cpu, src}) => compare({cpu, src}, cpu.a);
@@ -117,8 +117,8 @@ const cpy = ({cpu, src}) => compare({cpu, src}, cpu.y);
 
 function decrement({cpu, src}) {
   src = (src - 1) & 0xff;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   return src;
 }
 
@@ -135,15 +135,15 @@ const dey = (...args) => decrementIx(...args, 'y');
 
 function eor({cpu, src}) {
   src ^= cpu.a;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   cpu.a = src;
 }
 
 function increment({cpu, src}) {
   src = (src + 1) & 0xff;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   return src;
 }
 
@@ -169,8 +169,8 @@ function jsr({cpu, src}) {
 }
 
 function load({cpu, src}, key) {
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   cpu[key] = src;
 }
 
@@ -179,10 +179,10 @@ const ldx = (...args) => load(...args, 'x');
 const ldy = (...args) => load(...args, 'y');
 
 function lsr({cpu, src, store}) {
-  cpu.flag.carry(src & 0x01);
+  cpu.carry(src & 0x01);
   src >>= 1;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   store(src);
 }
 
@@ -190,8 +190,8 @@ function nop() {};
 
 function ora({cpu, src}) {
   src |= cpu.a;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   cpu.a = src;
 }
 
@@ -205,8 +205,8 @@ function php({cpu}) {
 
 function pla({cpu}) {
   const val = cpu.pull();
-  cpu.flag.sign(val);
-  cpu.flag.zero(val);
+  cpu.sign(val);
+  cpu.zero(val);
 }
 
 function plp({cpu}) {
@@ -215,20 +215,20 @@ function plp({cpu}) {
 
 function rol({cpu, src, store}) {
   src <<= 1;
-  if (cpu.flag.carry()) src |= 0x1;
-  cpu.flag.carry(src > 0xff);
+  if (cpu.carry()) src |= 0x1;
+  cpu.carry(src > 0xff);
   src &= 0xff;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   store(src);
 }
 
 function ror({cpu, src, store}) {
-  if (cpu.flag.carry()) src |= 0x100;
-  cpu.flag.carry(src & 0x01);
+  if (cpu.carry()) src |= 0x100;
+  cpu.carry(src & 0x01);
   src >>= 1;
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   store(src);
 }
 
@@ -242,12 +242,12 @@ function rts({cpu}) {
 }
 
 function sbc({cpu, src}) {
-  const carry = cpu.flag.carry() ? 0 : 1;
+  const carry = cpu.carry() ? 0 : 1;
   let temp = cpu.a - src - carry;
-  cpu.flag.sign(temp);
-  cpu.flag.zero(temp & 0xff);
-  cpu.flag.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ src) & 0x80));
-  if (cpu.flag.decimal()) {
+  cpu.sign(temp);
+  cpu.zero(temp & 0xff);
+  cpu.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ src) & 0x80));
+  if (cpu.decimal()) {
     if (((cpu.a & 0xf) - carry) < (src & 0xf)) {
       temp -= 6;
     }
@@ -255,13 +255,13 @@ function sbc({cpu, src}) {
       temp -= 0x60;
     }
   }
-  cpu.flag.carry(temp < 0x100);
+  cpu.carry(temp < 0x100);
   cpu.a = (temp & 0xff);
 }
 
-const sec = ({cpu}) => cpu.flag.carry(true);
-const sed = ({cpu}) => cpu.flag.decimal(true);
-const sei = ({cpu}) => cpu.flag.interrupt(true);
+const sec = ({cpu}) => cpu.carry(true);
+const sed = ({cpu}) => cpu.decimal(true);
+const sei = ({cpu}) => cpu.interrupt(true);
 
 const sta = ({cpu, store}) => store(cpu.a);
 const stx = ({cpu, store}) => store(cpu.x);
@@ -269,8 +269,8 @@ const sty = ({cpu, store}) => store(cpu.y);
 
 const transfer = function ({cpu}, from, to) {
   const src = cpu[from];
-  cpu.flag.sign(src);
-  cpu.flag.zero(src);
+  cpu.sign(src);
+  cpu.zero(src);
   cpu[to] = src;
 }
 
@@ -426,66 +426,64 @@ const cpu = {
   pc: 0,
   sp: 0,
   t: 0,
-  flag: {
-    sign: (val) => {
-      if (val !== undefined) {
-        if (val & FLAG_SIGN) cpu.stat |= FLAG_SIGN;
-        else cpu.stat &= ~FLAG_SIGN;
-      }
-      return !!(cpu.stat & FLAG_SIGN);
-    },
-    overflow: (cond) => {
-      if (cond !== undefined) {
-        if (cond) cpu.stat |= FLAG_OVERFLOW;
-        else cpu.stat &= ~FLAG_OVERFLOW;
-      }
-      return !!(cpu.stat & FLAG_OVERFLOW);
-    },
-    break: (cond) => {
-      if (cond !== undefined) {
-        if (cond) cpu.stat |= FLAG_BREAK;
-        else cpu.stat &= ~FLAG_BREAK;
-      }
-      return !!(cpu.stat & FLAG_BREAK);
-    },
-    decimal: (cond) => {
-      if (cond !== undefined) {
-        if (cond) cpu.stat |= FLAG_DECIMAL;
-        else cpu.stat &= ~FLAG_DECIMAL;
-      }
-      return !!(cpu.stat & FLAG_DECIMAL);
-    },
-    interrupt: (cond) => {
-      if (cond !== undefined) {
-        if (cond) cpu.stat |= FLAG_INTERRUPT;
-        else cpu.stat &= ~FLAG_INTERRUPT;
-      }
-      return !!(cpu.stat & FLAG_INTERRUPT);
-    },
-    zero: (val) => {
-      if (val !== undefined) {
-        if (val == 0) cpu.stat |= FLAG_ZERO;
-        else cpu.stat &= ~FLAG_ZERO;
-      }
-      return !!(cpu.stat & FLAG_ZERO);
-    },
-    carry: (cond) => {
-      if (cond !== undefined) {
-        if (cond) cpu.stat |= FLAG_CARRY;
-        else cpu.stat &= ~FLAG_CARRY;
-      }
-      return !!(cpu.stat & FLAG_CARRY);
-    },
+  sign: function(val) {
+    if (val !== undefined) {
+      if (val & FLAG_SIGN) this.stat |= FLAG_SIGN;
+      else this.stat &= ~FLAG_SIGN;
+    }
+    return !!(this.stat & FLAG_SIGN);
   },
-  push: (src) => {
+  overflow: function(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG_OVERFLOW;
+      else this.stat &= ~FLAG_OVERFLOW;
+    }
+    return !!(this.stat & FLAG_OVERFLOW);
+  },
+  break: function(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG_BREAK;
+      else this.stat &= ~FLAG_BREAK;
+    }
+    return !!(this.stat & FLAG_BREAK);
+  },
+  decimal: function(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG_DECIMAL;
+      else this.stat &= ~FLAG_DECIMAL;
+    }
+    return !!(this.stat & FLAG_DECIMAL);
+  },
+  interrupt: function(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG_INTERRUPT;
+      else this.stat &= ~FLAG_INTERRUPT;
+    }
+    return !!(this.stat & FLAG_INTERRUPT);
+  },
+  zero: function(val) {
+    if (val !== undefined) {
+      if (val == 0) this.stat |= FLAG_ZERO;
+      else this.stat &= ~FLAG_ZERO;
+    }
+    return !!(this.stat & FLAG_ZERO);
+  },
+  carry: function(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG_CARRY;
+      else this.stat &= ~FLAG_CARRY;
+    }
+    return !!(this.stat & FLAG_CARRY);
+  },
+  push: function(src) {
     debug(`push: 0x${src.toString(16)}`);
   },
-  tick: () => {
+  tick: function() {
     const {mode, exec, size, cycles} = inst;
-    const opcode = mmu.readByte(cpu.pc);
-    const next = cpu.pc + 1;
+    const opcode = mmu.readByte(this.pc);
+    const next = this.pc + 1;
 
-    debug(`pc: 0x${cpu.pc}, opcode: 0x${opcode.toString(16)}`);
+    debug(`pc: 0x${this.pc}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
     let branchCycles = 0;
@@ -505,23 +503,23 @@ const cpu = {
       case MODE_IMP:
         break; // Nothing to do here.
       case MODE_ACC:
-        src = cpu.a;
-        store = (val) => { cpu.a = val; };
+        src = this.a;
+        store = function(val) { this.a = val; };
         break;
       case MODE_ABS_X:
-        src = mmu.readWord(next) + cpu.x;
+        src = mmu.readWord(next) + this.x;
         store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_ABS_Y:
-        src = mmu.readWord(next) + cpu.y;
+        src = mmu.readWord(next) + this.y;
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_ZERO_PAGE_X:
-        src = mmu.readByte(next) + cpu.x;
+        src = mmu.readByte(next) + this.x;
         store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_ZERO_PAGE_Y:
-        src = mmu.readByte(next) + cpu.y;
+        src = mmu.readByte(next) + this.y;
         store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_IND:
@@ -529,11 +527,11 @@ const cpu = {
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_IDX_IND:
-        src = mmu.readWord(mmu.readByte(next + cpu.x));
+        src = mmu.readWord(mmu.readByte(next + this.x));
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_IND_IDX:
-        src = mmu.readWord(mmu.readByte(next)) + cpu.y;
+        src = mmu.readWord(mmu.readByte(next)) + this.y;
         store = (val) => mmu.writeWord(val, src);
         break;
       case MODE_REL: {
@@ -544,10 +542,10 @@ const cpu = {
       }
       default: throw new Error('Unknown addressing mode');
     }
-    exec[opcode]({cpu, mmu, src, store});
+    exec[opcode]({cpu: this, mmu, src, store});
 
-    cpu.pc += size[opcode];
-    cpu.t = cycles[opcode] + branchCycles;
+    this.pc += size[opcode];
+    this.t = cycles[opcode] + branchCycles;
   },
 };
 
