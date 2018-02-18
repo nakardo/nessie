@@ -2,6 +2,8 @@
 
 const fs = require('fs');
 const debug = require('debug')('nes');
+const raf = require('raf');
+const mario = fs.readFileSync('./roms/mario.nes');
 
 function unk() {
   throw new Error('Unknown instruction');
@@ -589,7 +591,7 @@ const mmu = {
   prgrom: null,
   readByte: function(addr) {
     addr &= 0xffff;
-    switch (addr >> 16) {
+    switch (addr >> 12) {
       case 0x0: case 0x1:
         return this.ram[addr & 0x7ff];
       case 0x2: case 0x3:
@@ -607,20 +609,24 @@ const mmu = {
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
+        console.log(this.prgrom.length.toString(16));
         return this.prgrom[addr & 0x7fff];
       default: break;
     }
     throw new Error(`Invalid address: 0x${addr.toString(16)}`);
   },
   readWord: function(addr) {
-    return this.readByte(addr) | this.readByte(++addr) << 8;
+    throw new Error('unimplemented');
+    // return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeByte: function(val, addr) {
-    this.rom[addr & 0xffff] = val;
+    throw new Error('unimplemented');
+    // this.rom[addr & 0xffff] = val;
   },
   writeWord: function(val, addr) {
-    this.writeByte(addr, val);
-    this.writeByte(++addr, val >> 8) << 8;
+    throw new Error('unimplemented');
+    // this.writeByte(addr, val);
+    // this.writeByte(++addr, val >> 8) << 8;
   },
 };
 
@@ -646,6 +652,12 @@ const MODE_ZERO_PAGE   = 11;
 const MODE_ZERO_PAGE_X = 12;
 const MODE_ZERO_PAGE_Y = 13;
 
+const INT_NMI_ADDR     = 0xfffa;
+const INT_RESET_ADDR   = 0xfffc;
+const INT_IRQ_BRK_ADDR = 0xfffe;
+
+const MAX_FRAME_CYCLES = 29830;
+
 const cpu = {
   a: 0,
   x: 0,
@@ -654,6 +666,11 @@ const cpu = {
   pc: 0,
   sp: 0,
   t: 0,
+  irq: false,
+  reset: false,
+  push: function(src) {
+    debug(`push: 0x${src.toString(16)}`);
+  },
   sign: function(val) {
     if (val !== undefined) {
       if (val & FLAG_SIGN) this.stat |= FLAG_SIGN;
@@ -703,15 +720,28 @@ const cpu = {
     }
     return !!(this.stat & FLAG_CARRY);
   },
-  push: function(src) {
-    debug(`push: 0x${src.toString(16)}`);
+  start: function() {
+    debug('start');
+    const tick = () => {
+      this.step();
+      this.loop = raf(tick);
+    };
+    this.reset = true;
+    this.loop = raf(tick);
   },
-  tick: function() {
+  step: function() {
+    this.t = 0;
+    while (this.t < MAX_FRAME_CYCLES) {
+      this.runCycle();
+      this.handleInterrupts();
+    }
+  },
+  runCycle: function() {
     const {mode, exec, size, cycles, branchCycles} = inst;
     const opcode = mmu.readByte(this.pc);
     const next = this.pc + 1;
 
-    debug(`pc: 0x${this.pc}, opcode: 0x${opcode.toString(16)}`);
+    debug(`pc: 0x${this.pc.toString(16)}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
     let totalCycles = cycles[opcode];
@@ -777,7 +807,26 @@ const cpu = {
     this.pc += size[opcode];
     this.t = totalCycles;
   },
+  handleInterrupts: function() {
+    if (!(this.irq | this.reset | this.interrupt())) {
+      return;
+    }
+
+    let addr;
+    if (this.reset) {
+      addr = INT_RESET_ADDR;
+      this.reset = false;
+    } else if (this.irq || this.break()) {
+      addr = INT_IRQ_BRK_ADDR;
+      this.irq = false;
+      this.break(false);
+    }
+    this.interrupt(false);
+
+    this.pc = addr;
+    this.t += 7;
+  },
 };
 
-mmu.prgrom = new Uint8Array(fs.readFileSync('./roms/mario.nes'), 0, 0x8000);
-setInterval(() => cpu.tick(), 1 / 500);
+mmu.prgrom = Uint8Array.from(mario).slice(0, 0x8000);
+cpu.start();
