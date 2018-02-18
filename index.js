@@ -3,7 +3,6 @@
 const fs = require('fs');
 const debug = require('debug')('nes');
 const raf = require('raf');
-const mario = fs.readFileSync('./roms/mario.nes');
 
 function unk() {
   throw new Error('Unknown instruction');
@@ -241,8 +240,8 @@ const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
  * 1. A BRK command cannot be masked by setting I.
  */
 function brk({cpu, mmu, src}) {
-  cpu.pc++;
-  cpu.push(cpu.pc);
+  const addr = cpu.pc + 1;
+  cpu.push(addr);
   cpu.break(true);
   cpu.push(cpu.stat);
   cpu.interrupt(true);
@@ -589,6 +588,9 @@ const mmu = {
   exrom: new Uint8Array(0x1fdf),
   sram: new Uint8Array(0x2000),
   prgrom: null,
+  loadCart: function(data) {
+    mmu.prgrom = Uint8Array.from(data).slice(0, 0x8000);
+  },
   readByte: function(addr) {
     addr &= 0xffff;
     switch (addr >> 12) {
@@ -609,7 +611,7 @@ const mmu = {
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        console.log(this.prgrom.length.toString(16));
+        console.log(`${(addr & 0x7fff).toString(16)}, ${this.prgrom[addr & 0x7fff].toString(16)}`);
         return this.prgrom[addr & 0x7fff];
       default: break;
     }
@@ -619,8 +621,13 @@ const mmu = {
     return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeByte: function(val, addr) {
-    throw new Error('unimplemented');
-    // this.rom[addr & 0xffff] = val;
+    addr &= 0xffff;
+    switch (addr >> 12) {
+      case 0x0: case 0x1:
+        return this.ram[addr & 0x7ff] = val;
+      default: break;
+    }
+    throw new Error(`Invalid address: 0x${addr.toString(16)}`);
   },
   writeWord: function(val, addr) {
     throw new Error('unimplemented');
@@ -667,8 +674,9 @@ const cpu = {
   t: 0,
   irq: false,
   reset: false,
-  push: function(src) {
-    debug(`push: 0x${src.toString(16)}`);
+  push: function(val) {
+    debug(`push value: 0x${val.toString(16)} at: 0x${this.sp.toString(16)}`);
+    mmu.writeByte(val, this.sp);
   },
   sign: function(val) {
     if (val !== undefined) {
@@ -731,8 +739,8 @@ const cpu = {
   step: function() {
     this.t = 0;
     while (this.t < MAX_FRAME_CYCLES) {
-      this.runCycle();
       this.handleInterrupts();
+      this.runCycle();
     }
   },
   runCycle: function() {
@@ -803,8 +811,8 @@ const cpu = {
     }
     exec[opcode]({cpu: this, mmu, src, store});
 
-    this.pc += size[opcode];
-    this.t = totalCycles;
+    // this.pc += size[opcode];
+    this.t += totalCycles;
   },
   handleInterrupts: function() {
     if (!(this.irq | this.reset | this.interrupt())) {
@@ -827,5 +835,5 @@ const cpu = {
   },
 };
 
-mmu.prgrom = Uint8Array.from(mario).slice(0, 0x8000);
+mmu.loadCart(fs.readFileSync('./roms/tetris.nes'));
 cpu.start();
