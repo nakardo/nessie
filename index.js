@@ -741,8 +741,8 @@ const cpu = {
   step: function() {
     this.t = 0;
     while (this.t < MAX_FRAME_CYCLES) {
-      this.handleInterrupts();
       this.runCycle();
+      this.handleInterrupts();
     }
   },
   runCycle: function() {
