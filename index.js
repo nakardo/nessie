@@ -479,25 +479,24 @@ const cpu = {
     debug(`push: 0x${src.toString(16)}`);
   },
   tick: function() {
-    const {mode, exec, size, cycles} = inst;
+    const {mode, exec, size, cycles, branchCycles} = inst;
     const opcode = mmu.readByte(this.pc);
     const next = this.pc + 1;
 
     debug(`pc: 0x${this.pc}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
-    let branchCycles = 0;
+    let totalCycles = cycles[opcode];
     switch (mode[opcode]) {
       case MODE_IMM:
         src = mmu.readByte(next);
-        store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_ABS:
-        src = mmu.readWord(next);
-        store = (val) => mmu.writeWord(val, next);
+        src = mmu.readByte(mmu.readWord(next));
+        store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_ZERO_PAGE:
-        src = mmu.readByte(next);
+        src = mmu.readByte(mmu.readByte(next));
         store = (val) => mmu.writeByte(val, next);
         break;
       case MODE_IMP:
@@ -512,7 +511,7 @@ const cpu = {
         break;
       case MODE_ABS_Y:
         src = mmu.readWord(next) + this.y;
-        store = (val) => mmu.writeWord(val, src);
+        store = (val) => mmu.writeByte(val, src);
         break;
       case MODE_ZERO_PAGE_X:
         src = mmu.readByte(next) + this.x;
@@ -524,16 +523,19 @@ const cpu = {
         break;
       case MODE_IND:
         src = mmu.readWord(mmu.readWord(next));
-        store = (val) => mmu.writeWord(val, src);
         break;
-      case MODE_IDX_IND:
-        src = mmu.readWord(mmu.readByte(next + this.x));
-        store = (val) => mmu.writeWord(val, src);
+      case MODE_IDX_IND: {
+        const addr = mmu.readWord(mmu.readByte(next) + this.x);
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeWord(val, addr);
         break;
-      case MODE_IND_IDX:
-        src = mmu.readWord(mmu.readByte(next)) + this.y;
-        store = (val) => mmu.writeWord(val, src);
+      }
+      case MODE_IND_IDX: {
+        const addr = mmu.readWord(mmu.readByte(next)) + this.y;
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeWord(val, addr);
         break;
+      }
       case MODE_REL: {
         const byte = mmu.readByte(next);
         src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
@@ -545,7 +547,7 @@ const cpu = {
     exec[opcode]({cpu: this, mmu, src, store});
 
     this.pc += size[opcode];
-    this.t = cycles[opcode] + branchCycles;
+    this.t = totalCycles;
   },
 };
 
