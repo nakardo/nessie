@@ -559,20 +559,68 @@ const inst = {
   ],
 };
 
+/**
+ * Memory Map
+ * ----------
+ * +---------+-------+-------+-----------------------+
+ * | Address | Size  | Flags | Description           |
+ * +---------+-------+-------+-----------------------+
+ * | $0000   | $800  |       | RAM                   |
+ * | $0800   | $800  | M     | RAM                   |
+ * | $1000   | $800  | M     | RAM                   |
+ * | $1800   | $800  | M     | RAM                   |
+ * | $2000   | 8     |       | Registers             |
+ * | $2008   | $1FF8 |  R    | Registers             |
+ * | $4000   | $20   |       | Registers             |
+ * | $4020   | $1FDF |       | Expansion ROM         |
+ * | $6000   | $2000 |       | SRAM                  |
+ * | $8000   | $4000 |       | PRG-ROM               |
+ * | $C000   | $4000 |       | PRG-ROM               |
+ * +---------+-------+-------+-----------------------+
+ *        Flag Legend: M = Mirror of $0000
+ *                     R = Mirror of $2000-2008 every 8 bytes
+ *                         (e.g. $2008=$2000, $2018=$2000, etc.)
+ */
 const mmu = {
   ram: new Uint8Array(0x800),
-  rom: new Uint8Array(fs.readFileSync('./roms/mario.nes'), 0, 0x4000),
-  readByte: (addr) => {
-    return mmu.rom[addr & 0xffff];
+  registers: new Uint8Array(8),
+  exrom: new Uint8Array(0x1fdf),
+  sram: new Uint8Array(0x2000),
+  prgrom: null,
+  readByte: function(addr) {
+    addr &= 0xffff;
+    switch (addr >> 16) {
+      case 0x0: case 0x1:
+        return this.ram[addr & 0x7ff];
+      case 0x2: case 0x3:
+        return this.registers[addr & 7];
+      case 0x4:
+        addr &= 0x1fff;
+        if (addr < 0x20) {
+          // TODO(nakardo) unimplemented: more registers.
+          break;
+        }
+        return exrom[addr - 0x20];
+      case 0x5: case 0x6:
+        return sram[addr & 0x4fff];
+      case 0x8: case 0x9:
+      case 0xa: case 0xb:
+      case 0xc: case 0xd:
+      case 0xe: case 0xf:
+        return this.prgrom[addr & 0x7fff];
+      default: break;
+    }
+    throw new Error(`Invalid address: 0x${addr.toString(16)}`);
   },
-  readWord: (addr) => {
-    return mmu.readByte(addr) | mmu.readByte(++addr) << 8;
+  readWord: function(addr) {
+    return this.readByte(addr) | this.readByte(++addr) << 8;
   },
-  writeByte: (val, addr) => {
-    return mmu.rom[addr & 0xffff] = val;
+  writeByte: function(val, addr) {
+    this.rom[addr & 0xffff] = val;
   },
-  writeWord: (val, addr) => {
-    return mmu.writeByte(addr, val) | mmu.writeByte(++addr, val >> 8) << 8;
+  writeWord: function(val, addr) {
+    this.writeByte(addr, val);
+    this.writeByte(++addr, val >> 8) << 8;
   },
 };
 
@@ -731,4 +779,5 @@ const cpu = {
   },
 };
 
+mmu.prgrom = new Uint8Array(fs.readFileSync('./roms/mario.nes'), 0, 0x8000);
 setInterval(() => cpu.tick(), 1 / 500);
