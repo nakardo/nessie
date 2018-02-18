@@ -616,8 +616,7 @@ const mmu = {
     throw new Error(`Invalid address: 0x${addr.toString(16)}`);
   },
   readWord: function(addr) {
-    throw new Error('unimplemented');
-    // return this.readByte(addr) | this.readByte(++addr) << 8;
+    return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeByte: function(val, addr) {
     throw new Error('unimplemented');
