@@ -7,6 +7,13 @@ function unk() {
   throw new Error('Unknown instruction');
 }
 
+function branch({cpu, src}, cond) {
+  if (cond) {
+    cpu.t += (cpu.pc & 0xff00 != (cpu.pc + src) & 0xff00) ? 2 : 1;
+    cpu.pc = (cpu.pc + src) & 0xffff;
+  }
+}
+
 /**
  * ADC               Add memory to accumulator with carry                ADC
  *
@@ -49,6 +56,26 @@ function adc({cpu, src}) {
   cpu.a = temp & 0xff;
 }
 
+/**
+ * AND                  "AND" memory with accumulator                    AND
+ *
+ * Operation:  A /\ M -> A                               N Z C I D V
+ *                                                       / / _ _ _ _
+ *                              (Ref: 2.2.3.0)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Immediate     |   AND #Oper           |    29   |    2    |    2     |
+ * |  Zero Page     |   AND Oper            |    25   |    2    |    3     |
+ * |  Zero Page,X   |   AND Oper,X          |    35   |    2    |    4     |
+ * |  Absolute      |   AND Oper            |    2D   |    3    |    4     |
+ * |  Absolute,X    |   AND Oper,X          |    3D   |    3    |    4*    |
+ * |  Absolute,Y    |   AND Oper,Y          |    39   |    3    |    4*    |
+ * |  (Indirect,X)  |   AND (Oper,X)        |    21   |    2    |    6     |
+ * |  (Indirect,Y)  |   AND (Oper),Y        |    31   |    2    |    5     |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if page boundary is crossed.
+ */
 function and({cpu, src}) {
   src &= cpu.a;
   cpu.sign(src);
@@ -56,6 +83,23 @@ function and({cpu, src}) {
   cpu.a = src;
 }
 
+/**
+ * ASL          ASL Shift Left One Bit (Memory or Accumulator)           ASL
+ *                  +-+-+-+-+-+-+-+-+
+ * Operation:  C <- |7|6|5|4|3|2|1|0| <- 0
+ *                  +-+-+-+-+-+-+-+-+                    N Z C I D V
+ *                                                       / / / _ _ _
+ *                                (Ref: 10.2)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Accumulator   |   ASL A               |    0A   |    1    |    2     |
+ * |  Zero Page     |   ASL Oper            |    06   |    2    |    5     |
+ * |  Zero Page,X   |   ASL Oper,X          |    16   |    2    |    6     |
+ * |  Absolute      |   ASL Oper            |    0E   |    3    |    6     |
+ * |  Absolute, X   |   ASL Oper,X          |    1E   |    3    |    7     |
+ * +----------------+-----------------------+---------+---------+----------+
+ */
 function asl({cpu, src, store}) {
   cpu.carry(src & 0x80);
   src <<= 1;
@@ -65,31 +109,135 @@ function asl({cpu, src, store}) {
   store(src);
 }
 
-function branch({cpu, src}, cond) {
-  if (cond) {
-    const diff = cpu.pc & 0xff00 != (cpu.pc + src) & 0xff00;
-    cpu.t += diff ? 2 : 1;
-    cpu.pc = (cpu.pc + src) & 0xffff;
-  }
-}
-
-const bcs = ({cpu, src}) => branch({cpu, src}, cpu.carry());
-const beq = ({cpu, src}) => branch({cpu, src}, cpu.zero());
-const bmi = ({cpu, src}) => branch({cpu, src}, cpu.sign());
-
+/**
+ * BCC                     BCC Branch on Carry Clear                     BCC
+ *                                                       N Z C I D V
+ * Operation:  Branch on C = 0                           _ _ _ _ _ _
+ *                              (Ref: 4.1.1.3)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BCC Oper            |    90   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 2 if branch occurs to different page.
+ */
 const bcc = ({cpu, src}) => branch({cpu, src}, !cpu.carry());
-const bne = ({cpu, src}) => branch({cpu, src}, !cpu.zero());
-const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
 
-const bvc = ({cpu, src}) => branch({cpu, src}, !cpu.overflow());
-const bvs = ({cpu, src}) => branch({cpu, src}, cpu.overflow());
+/**
+ * BCS                      BCS Branch on carry set                      BCS
+ *
+ * Operation:  Branch on C = 1                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.4)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BCS Oper            |    B0   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same  page.
+ * * Add 2 if branch occurs to next  page.
+ */
+const bcs = ({cpu, src}) => branch({cpu, src}, cpu.carry());
 
+/**
+ * BEQ                    BEQ Branch on result zero                      BEQ
+ *                                                       N Z C I D V
+ * Operation:  Branch on Z = 1                           _ _ _ _ _ _
+ *                              (Ref: 4.1.1.5)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BEQ Oper            |    F0   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same  page.
+ * * Add 2 if branch occurs to next  page.
+ */
+const beq = ({cpu, src}) => branch({cpu, src}, cpu.zero());
+
+/**
+ * BIT             BIT Test bits in memory with accumulator              BIT
+ *
+ * Operation:  A /\ M, M7 -> N, M6 -> V
+ *
+ * Bit 6 and 7 are transferred to the status register.   N Z C I D V
+ * If the result of A /\ M is zero then Z = 1, otherwise M7/ _ _ _ M6
+ * Z = 0
+ *                              (Ref: 4.2.1.1)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Zero Page     |   BIT Oper            |    24   |    2    |    3     |
+ * |  Absolute      |   BIT Oper            |    2C   |    3    |    4     |
+ * +----------------+-----------------------+---------+---------+----------+
+ */
 function bit({cpu, src}) {
   cpu.sign(src);
   cpu.overflow(0x40 & src);
   cpu.zero(src & cpu.a);
 }
 
+/**
+ * BMI                    BMI Branch on result minus                     BMI
+ *
+ * Operation:  Branch on N = 1                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.1)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BMI Oper            |    30   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 1 if branch occurs to different page.
+ */
+const bmi = ({cpu, src}) => branch({cpu, src}, cpu.sign());
+
+/**
+ * BNE                   BNE Branch on result not zero                   BNE
+ *
+ * Operation:  Branch on Z = 0                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.6)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BMI Oper            |    D0   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 2 if branch occurs to different page.
+ */
+const bne = ({cpu, src}) => branch({cpu, src}, !cpu.zero());
+
+/**
+ * BPL                     BPL Branch on result plus                     BPL
+ *
+ * Operation:  Branch on N = 0                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.2)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BPL Oper            |    10   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 2 if branch occurs to different page.
+ */
+const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
+
+/**
+ * BRK                          BRK Force Break                          BRK
+ *
+ * Operation:  Forced Interrupt PC + 2 toS P toS         N Z C I D V
+ *                                                       _ _ _ 1 _ _
+ *                                (Ref: 9.11)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Implied       |   BRK                 |    00   |    1    |    7     |
+ * +----------------+-----------------------+---------+---------+----------+
+ * 1. A BRK command cannot be masked by setting I.
+ */
 function brk({cpu, mmu, src}) {
   cpu.pc++;
   cpu.push(cpu.pc);
@@ -98,6 +246,38 @@ function brk({cpu, mmu, src}) {
   cpu.interrupt(true);
   cpu.pc = mmu.readWord(0xfffe);
 }
+
+/**
+ * BVC                   BVC Branch on overflow clear                    BVC
+ *
+ * Operation:  Branch on V = 0                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.8)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BVC Oper            |    50   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 2 if branch occurs to different page.
+ */
+const bvc = ({cpu, src}) => branch({cpu, src}, !cpu.overflow());
+
+/**
+ * BVS                    BVS Branch on overflow set                     BVS
+ *
+ * Operation:  Branch on V = 1                           N Z C I D V
+ *                                                       _ _ _ _ _ _
+ *                              (Ref: 4.1.1.7)
+ * +----------------+-----------------------+---------+---------+----------+
+ * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
+ * +----------------+-----------------------+---------+---------+----------+
+ * |  Relative      |   BVS Oper            |    70   |    2    |    2*    |
+ * +----------------+-----------------------+---------+---------+----------+
+ * * Add 1 if branch occurs to same page.
+ * * Add 2 if branch occurs to different page.
+ */
+const bvs = ({cpu, src}) => branch({cpu, src}, cpu.overflow());
 
 const clc = ({cpu}) => cpu.carry(false);
 const cld = ({cpu}) => cpu.decimal(false);
