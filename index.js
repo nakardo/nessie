@@ -240,8 +240,9 @@ const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
  * 1. A BRK command cannot be masked by setting I.
  */
 function brk({cpu, mmu, src}) {
-  const addr = cpu.pc + 1;
-  cpu.push(addr);
+  cpu.pc++;
+  cpu.push(cpu.pc >> 8);
+  cpu.push(cpu.pc);
   cpu.break(true);
   cpu.push(cpu.stat);
   cpu.interrupt(true);
@@ -345,6 +346,7 @@ function jmp({cpu, src}) {
 
 function jsr({cpu, src}) {
   cpu.pc--;
+  cpu.push(cpu.pc >> 8);
   cpu.push(cpu.pc);
   cpu.pc = src;
 }
@@ -675,8 +677,8 @@ const cpu = {
   irq: false,
   reset: false,
   push: function(val) {
-    debug(`push value: 0x${val.toString(16)} at: 0x${this.sp.toString(16)}`);
-    mmu.writeByte(val, this.sp);
+    debug('push');
+    mmu.writeByte(val, this.sp++);
   },
   sign: function(val) {
     if (val !== undefined) {
