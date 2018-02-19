@@ -758,36 +758,48 @@ const cpu = {
       case MODE_IMM:
         src = mmu.readByte(next);
         break;
-      case MODE_ABS:
-        src = mmu.readByte(mmu.readWord(next));
-        store = (val) => mmu.writeByte(val, next);
+      case MODE_ABS: {
+        const addr = mmu.readWord(next);
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
-      case MODE_ZERO_PAGE:
-        src = mmu.readByte(mmu.readByte(next));
-        store = (val) => mmu.writeByte(val, next);
+      }
+      case MODE_ZERO_PAGE: {
+        const addr = mmu.readByte(next);
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
+      }
       case MODE_IMP:
         break; // Nothing to do here.
       case MODE_ACC:
         src = this.a;
-        store = function(val) { this.a = val; };
+        store = (val) => this.a = val;
         break;
-      case MODE_ABS_X:
-        src = mmu.readWord(next) + this.x;
-        store = (val) => mmu.writeByte(val, src);
+      case MODE_ABS_X: {
+        const addr = mmu.readWord(next) + this.x;
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
-      case MODE_ABS_Y:
-        src = mmu.readWord(next) + this.y;
-        store = (val) => mmu.writeByte(val, src);
+      }
+      case MODE_ABS_Y: {
+        const addr = mmu.readWord(next) + this.y;
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
-      case MODE_ZERO_PAGE_X:
-        src = mmu.readByte(next) + this.x;
-        store = (val) => mmu.writeByte(val, src);
+      }
+      case MODE_ZERO_PAGE_X: {
+        const addr = mmu.readByte(next) + this.x;
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
-      case MODE_ZERO_PAGE_Y:
-        src = mmu.readByte(next) + this.y;
-        store = (val) => mmu.writeByte(val, src);
+      }
+      case MODE_ZERO_PAGE_Y: {
+        const addr = mmu.readByte(next) + this.y;
+        src = mmu.readByte(addr);
+        store = (val) => mmu.writeByte(val, addr);
         break;
+      }
       case MODE_IND:
         src = mmu.readWord(mmu.readWord(next));
         break;
@@ -806,7 +818,6 @@ const cpu = {
       case MODE_REL: {
         const byte = mmu.readByte(next);
         src = byte & 0x80 ? -((0xff & ~byte) + 1) : byte;
-        store = (val) => mmu.writeByte(val, src);
         break;
       }
       default: throw new Error('Unknown addressing mode');
