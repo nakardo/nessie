@@ -465,7 +465,7 @@ const tsx = (...args) => transfer(...args, 'sp', 'x');
 const txs = (...args) => transfer(...args, 'x', 'sp');
 
 const inst = {
-  exec: [
+  fn: [
     /*       00   01   02   03   04   05   06   07   08   09   0A   0B   0C   0D   0E   0F   */
     /* 00 */ brk, ora, unk, unk, unk, ora, asl, unk, php, ora, asl, unk, unk, ora, asl, unk,
     /* 10 */ bpl, ora, unk, unk, unk, ora, asl, unk, clc, ora, unk, unk, unk, ora, asl, unk,
@@ -503,7 +503,7 @@ const inst = {
     /* E0 */ 5,  7,  5,  7,  11, 11, 11, 11, 6,  5,  6,  5,  1,  1,  1,  1,
     /* F0 */ 10, 9,  6,  9,  12, 12, 12, 12, 6,  3,  6,  3,  2,  2,  2,  2,
   ],
-  size: [
+  bytes: [
     /*       00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F */
     /* 00 */ 1, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /* 10 */ 2, 2, 0, 0, 2, 2, 2, 0, 1, 3, 1, 0, 3, 3, 3, 0,
@@ -746,15 +746,15 @@ const cpu = {
     }
   },
   runCycle: function() {
-    const {mode, exec, size, cycles, branchCycles} = inst;
     const opcode = mmu.readByte(this.pc);
+    const curr = this.pc;
     const next = this.pc + 1;
 
     debug(`pc: 0x${this.pc.toString(16)}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
-    let totalCycles = cycles[opcode];
-    switch (mode[opcode]) {
+    let totalCycles = inst.cycles[opcode];
+    switch (inst.mode[opcode]) {
       case MODE_IMM:
         src = mmu.readByte(next);
         break;
@@ -822,9 +822,9 @@ const cpu = {
       }
       default: throw new Error('Unknown addressing mode');
     }
-    exec[opcode]({cpu: this, mmu, src, store});
+    inst.fn[opcode]({cpu: this, mmu, src, store});
 
-    // this.pc += size[opcode];
+    this.pc += inst.bytes[opcode];
     this.t += totalCycles;
   },
   handleInterrupts: function() {
