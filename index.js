@@ -562,6 +562,16 @@ const inst = {
   ],
 };
 
+const ppu = {
+  memory: new Uint8Array(8),
+  readByte: function(addr) {
+    return memory[addr & 7];
+  },
+  writeByte: function(val, addressing) {
+    memory[addr & 7] = val;
+  }
+};
+
 /**
  * Memory Map
  * ----------
@@ -586,7 +596,6 @@ const inst = {
  */
 const mmu = {
   ram: new Uint8Array(0x800),
-  registers: new Uint8Array(8),
   exrom: new Uint8Array(0x1fdf),
   sram: new Uint8Array(0x2000),
   prgrom: null,
@@ -599,37 +608,43 @@ const mmu = {
       case 0x0: case 0x1:
         return this.ram[addr & 0x7ff];
       case 0x2: case 0x3:
-        return this.registers[addr & 7];
-      case 0x4:
+        return 0;
+      case 0x4: case 0x5:
         addr &= 0x1fff;
         if (addr < 0x20) {
-          // TODO(nakardo) unimplemented: more registers.
-          break;
+          return 0;
         }
-        return exrom[addr - 0x20];
-      case 0x5: case 0x6:
-        return sram[addr & 0x4fff];
+        return this.exrom[addr - 0x20];
+      case 0x6: case 0x7:
+        return this.sram[addr & 0x4fff];
       case 0x8: case 0x9:
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        console.log(`${(addr & 0x7fff).toString(16)}, ${this.prgrom[addr & 0x7fff].toString(16)}`);
         return this.prgrom[addr & 0x7fff];
       default: break;
     }
     throw new Error(`Invalid address: 0x${addr.toString(16)}`);
-  },
-  readWord: function(addr) {
-    return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeByte: function(val, addr) {
     addr &= 0xffff;
     switch (addr >> 12) {
       case 0x0: case 0x1:
         return this.ram[addr & 0x7ff] = val;
+      case 0x2: case 0x3:
+        return 0;
+      case 0x4: case 0x5:
+        if (addr < 0x20) {
+          return 0;
+        }
+      case 0x6: case 0x7:
+        return this.sram[addr & 0x4fff];
       default: break;
     }
     throw new Error(`Invalid address: 0x${addr.toString(16)}`);
+  },
+  readWord: function(addr) {
+    return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeWord: function(val, addr) {
     throw new Error('unimplemented');
