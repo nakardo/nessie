@@ -676,6 +676,7 @@ const cpu = {
   t: 0,
   irq: false,
   reset: false,
+  loop: null,
   push: function(val) {
     debug('push');
     mmu.writeByte(val, this.sp++);
@@ -750,7 +751,7 @@ const cpu = {
     const curr = this.pc;
     const next = this.pc + 1;
 
-    debug(`pc: 0x${this.pc.toString(16)}, opcode: 0x${opcode.toString(16)}`);
+    debug(`pc: 0x${curr.toString(16)}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
     let totalCycles = inst.cycles[opcode];
@@ -824,7 +825,7 @@ const cpu = {
     }
     inst.fn[opcode]({cpu: this, mmu, src, store});
 
-    this.pc += inst.bytes[opcode];
+    this.pc += this.pc != curr ? this.pc : inst.bytes[opcode];
     this.t += totalCycles;
   },
   handleInterrupts: function() {
