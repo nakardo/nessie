@@ -229,7 +229,7 @@ const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
 /**
  * BRK                          BRK Force Break                          BRK
  *
- * Operation:  Forced Interrupt PC + 2 toS P toS         N Z C I D V
+ * Operation:  Forced Interrupt PC + 2 to SP             N Z C I D V
  *                                                       _ _ _ 1 _ _
  *                                (Ref: 9.11)
  * +----------------+-----------------------+---------+---------+----------+
@@ -756,16 +756,15 @@ const cpu = {
   step: function() {
     this.t = 0;
     while (this.t < MAX_FRAME_CYCLES) {
-      this.runCycle();
       this.handleInterrupts();
+      this.runCycle();
     }
   },
   runCycle: function() {
     const opcode = mmu.readByte(this.pc);
-    const curr = this.pc;
     const next = this.pc + 1;
 
-    debug(`pc: 0x${curr.toString(16)}, opcode: 0x${opcode.toString(16)}`);
+    debug(`pc: 0x${this.pc.toString(16)}, opcode: 0x${opcode.toString(16)}`);
 
     let src, store;
     let totalCycles = inst.cycles[opcode];
@@ -837,13 +836,14 @@ const cpu = {
       }
       default: throw new Error('Unknown addressing mode');
     }
-    inst.fn[opcode]({cpu: this, mmu, src, store});
-
-    this.pc += this.pc != curr ? this.pc : inst.bytes[opcode];
+    this.pc += inst.bytes[opcode];
     this.t += totalCycles;
+
+    inst.fn[opcode]({cpu: this, mmu, src, store});
+    console.log(this.pc);
   },
   handleInterrupts: function() {
-    if (!(this.irq | this.reset | this.interrupt())) {
+    if (!this.interrupt()) {
       return;
     }
 
