@@ -647,9 +647,8 @@ const mmu = {
     return this.readByte(addr) | this.readByte(++addr) << 8;
   },
   writeWord: function(val, addr) {
-    throw new Error('unimplemented');
-    // this.writeByte(addr, val);
-    // this.writeByte(++addr, val >> 8) << 8;
+    this.writeByte(addr, val);
+    this.writeByte(++addr, val >> 8);
   },
 };
 
