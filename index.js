@@ -240,13 +240,11 @@ const bpl = ({cpu, src}) => branch({cpu, src}, !cpu.sign());
  * 1. A BRK command cannot be masked by setting I.
  */
 function brk({cpu, mmu, src}) {
-  cpu.pc++;
   cpu.push(cpu.pc >> 8);
   cpu.push(cpu.pc);
   cpu.break(true);
   cpu.push(cpu.stat);
   cpu.interrupt(true);
-  cpu.pc = mmu.readWord(0xfffe);
 }
 
 /**
@@ -598,9 +596,9 @@ const mmu = {
   ram: new Uint8Array(0x800),
   exrom: new Uint8Array(0x1fdf),
   sram: new Uint8Array(0x2000),
-  prgrom: null,
+  prgrom: new Uint8Array(0x4000),
   loadCart: function(data) {
-    mmu.prgrom = Uint8Array.from(data).slice(0, 0x8000);
+    this.prgrom = data.slice(16, 0x4000 + 16);
   },
   readByte: function(addr) {
     addr &= 0xffff;
@@ -621,7 +619,7 @@ const mmu = {
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        return this.prgrom[addr & 0x7fff];
+        return this.prgrom[addr & 0x3fff];
       default: break;
     }
     throw new Error(`Invalid address: 0x${addr.toString(16)}`);
@@ -760,6 +758,27 @@ const cpu = {
       this.runCycle();
     }
   },
+  handleInterrupts: function() {
+    if (!this.interrupt()) {
+      return;
+    }
+
+    let addr;
+    if (this.reset) {
+      addr = INT_RESET_ADDR;
+      this.reset = false;
+    } else if (this.irq) {
+      addr = INT_IRQ_BRK_ADDR;
+      this.irq = false;
+    } else if (this.break()) {
+      addr = INT_IRQ_BRK_ADDR;
+      this.break(false);
+    }
+    this.interrupt(false);
+
+    this.pc = addr;
+    this.t += 7;
+  },
   runCycle: function() {
     const opcode = mmu.readByte(this.pc);
     const next = this.pc + 1;
@@ -840,28 +859,16 @@ const cpu = {
     this.t += totalCycles;
 
     inst.fn[opcode]({cpu: this, mmu, src, store});
-    console.log(this.pc);
-  },
-  handleInterrupts: function() {
-    if (!this.interrupt()) {
-      return;
-    }
-
-    let addr;
-    if (this.reset) {
-      addr = INT_RESET_ADDR;
-      this.reset = false;
-    } else if (this.irq || this.break()) {
-      addr = INT_IRQ_BRK_ADDR;
-      this.irq = false;
-      this.break(false);
-    }
-    this.interrupt(false);
-
-    this.pc = addr;
-    this.t += 7;
   },
 };
 
-mmu.loadCart(fs.readFileSync('./roms/tetris.nes'));
+const data = new Uint8Array(fs.readFileSync('./roms/dk.nes'));
+mmu.loadCart(data);
+console.log(String.fromCharCode.apply(null, data.slice(0, 3)));
+console.log('$1A', data[3].toString(16));
+console.log('16K PRG-ROM page count', data[4].toString(16));
+console.log('8K CHR-ROM page count', data[5].toString(2));
+console.log('ROM Control Byte #1', data[6].toString(2));
+console.log('ROM Control Byte #2', data[7].toString(2));
+process.exit();
 cpu.start();
