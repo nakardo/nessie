@@ -1,9 +1,8 @@
 'use strict';
 
-const Fs = require('fs');
-const RomData = new Uint8Array(Fs.readFileSync('./roms/dk.nes'));
-const Nes = require('./lib/nes');
+import fs from 'fs';
+import Nes from './lib/nes';
 
 const nes = new Nes();
-nes.loadCart(RomData);
+nes.loadCart(fs.readFileSync('./roms/dk.nes'));
 nes.start();
