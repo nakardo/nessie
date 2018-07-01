@@ -6,5 +6,8 @@
       }
     }]
   ],
-  "plugins": ["transform-strict-mode"]
+  "plugins": [
+    "transform-strict-mode",
+    "transform-object-rest-spread"
+  ]
 }
