@@ -7,7 +7,7 @@ module.exports = {
   output: {
     filename: 'nes.node.js',
     path: path.resolve(__dirname, 'dist'),
-    libraryTarget: 'commonjs'
+    libraryTarget: 'umd'
   },
   module: {
     rules: [
@@ -25,9 +25,10 @@ module.exports = {
               }]
             ],
             plugins: [
-              require('babel-plugin-transform-strict-mode'),
-              require('babel-plugin-transform-object-rest-spread'),
-              require('babel-plugin-transform-class-properties')
+              'transform-strict-mode',
+              'transform-object-rest-spread',
+              'transform-class-properties',
+              'add-module-exports'
             ]
           }
         }
