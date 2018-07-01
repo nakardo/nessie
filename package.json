@@ -2,12 +2,11 @@
   "name": "node-nes",
   "version": "1.0.0",
   "description": "A NES emulator written in JavaScript",
+  "scripts": {
+    "start": "webpack --config webpack.dev.js && node scripts/node.js"
+  },
   "author": "Diego Acosta <diegonake@gmail.com>",
   "license": "MIT",
-  "scripts": {
-    "start": "yarn run build && node dist/bundle.js",
-    "build": "webpack"
-  },
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",

@@ -1,12 +1,13 @@
 const path = require('path');
 
 module.exports = {
-  entry: './scripts/debug.js',
+  entry: './lib/nes.js',
   target: 'node',
   mode: 'development',
   output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    filename: 'nes.node.js',
+    path: path.resolve(__dirname, 'dist'),
+    libraryTarget: 'commonjs'
   },
   module: {
     rules: [
