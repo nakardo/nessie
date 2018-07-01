@@ -1,4 +1,7 @@
+'use strict';
+
 const path = require('path');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   entry: './lib/nes.js',
@@ -9,6 +12,9 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd'
   },
+  plugins: [
+    new CleanWebpackPlugin(['dist'])
+  ],
   module: {
     rules: [
       {
