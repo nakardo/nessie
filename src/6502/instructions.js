@@ -579,7 +579,6 @@ export function jmp({cpu, src}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function jsr({cpu, src}) {
-  cpu.pc--;
   cpu.push16(cpu.pc);
   cpu.pc = src;
 }

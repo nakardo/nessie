@@ -28,6 +28,7 @@ export default class Cpu {
   }
 
   push16(val) {
+    debug('push to: %s, value: %s', this.sp.to(16), val.to(16));
     this.mmu.w16(val, this.sp);
     this.sp += 2;
     this.sp &= 0xff;
