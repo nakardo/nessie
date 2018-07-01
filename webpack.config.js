@@ -8,7 +8,7 @@ module.exports = {
   target: 'node',
   mode: 'development',
   output: {
-    filename: 'nes.node.js',
+    filename: 'bundle.node.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd'
   },
@@ -19,7 +19,7 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
+        exclude: ['node_modules'],
         use: {
           loader: 'babel-loader',
           options: {

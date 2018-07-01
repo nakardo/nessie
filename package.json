@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A NES emulator written in JavaScript",
   "scripts": {
-    "start": "webpack --config webpack.dev.js && node scripts/node.js"
+    "start": "webpack --display=errors-only && node index.js"
   },
   "author": "Diego Acosta <diegonake@gmail.com>",
   "license": "MIT",
