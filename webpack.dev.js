@@ -4,7 +4,7 @@ const path = require('path');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
-  entry: './lib/nes.js',
+  entry: './src/nes.js',
   target: 'node',
   mode: 'development',
   output: {
