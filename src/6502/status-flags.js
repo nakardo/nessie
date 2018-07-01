@@ -1,5 +1,3 @@
-'use strict'
-
 export const SIGN = 1 << 7;
 export const OVERFLOW = 1 << 6;
 export const BREAK = 1 << 4;
