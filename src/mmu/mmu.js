@@ -32,7 +32,10 @@ export default class Mmu {
   prgrom = null;
 
   loadCart(buf) {
-    this.prgrom = Uint8Array.from(buf.slice(16, 0x4000 + 16));
+    const data = Uint8Array.from(buf);
+    this.prgrom = data.slice(16, 0x4000 + 16);
+
+    debug('16K PRG-ROM page count: %d', data[4]);
   }
 
   r8(addr) {
@@ -49,7 +52,7 @@ export default class Mmu {
         }
         return this.exrom[addr - 0x20];
       case 0x6: case 0x7:
-        return this.sram[addr & 0x4fff];
+        return this.sram[addr & 0x1fff];
       case 0x8: case 0x9:
       case 0xa: case 0xb:
       case 0xc: case 0xd:
@@ -72,7 +75,7 @@ export default class Mmu {
           return 0;
         }
       case 0x6: case 0x7:
-        return this.sram[addr & 0x4fff];
+        return this.sram[addr & 0x1fff] = val;
       default: break;
     }
     throw new UnmappedAddressError(addr);
