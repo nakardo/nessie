@@ -132,6 +132,8 @@ export default class Cpu {
     this.interrupt(false);
     this.pc = this.mmu.r16(INT.IRQ_BRK_ADDR);
     this.t += 7;
+
+    debug('interrupt, pc: %s', this.pc.to(16));
   }
 
   decode() {
