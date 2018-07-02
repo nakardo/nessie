@@ -1,5 +1,6 @@
 import {debug as Debug} from 'debug';
-import {UnmappedAddressError} from './errors';
+import {UnmappedAddressError} from '../errors';
+import Ppu from '../ppu/ppu';
 
 const debug = Debug('nes:mmu');
 
@@ -27,6 +28,7 @@ const debug = Debug('nes:mmu');
  */
 export default class Mmu {
   ram = new Uint8Array(0x800);
+  ppu = new Ppu();
   exrom = new Uint8Array(0x1fdf);
   sram = new Uint8Array(0x2000);
   prgrom = null;
@@ -44,7 +46,7 @@ export default class Mmu {
       case 0x0: case 0x1:
         return this.ram[addr & 0x7ff];
       case 0x2: case 0x3:
-        return 0;
+        return this.ppu.r8(addr);
       case 0x4: case 0x5:
         addr &= 0x1fff;
         if (addr < 0x20) {
@@ -69,7 +71,7 @@ export default class Mmu {
       case 0x0: case 0x1:
         return this.ram[addr & 0x7ff] = val;
       case 0x2: case 0x3:
-        return 0;
+        return this.ppu.w8(val, addr);
       case 0x4: case 0x5:
         if (addr < 0x20) {
           return 0;

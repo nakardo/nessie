@@ -23,12 +23,13 @@ export default class Cpu {
   }
 
   push8(val) {
+    debug('push byte to: %s, value: %s', this.sp.to(16), val.to(16));
     this.mmu.w8(val, this.sp++);
     this.sp &= 0xff;
   }
 
   push16(val) {
-    debug('push to: %s, value: %s', this.sp.to(16), val.to(16));
+    debug('push word to: %s, value: %s', this.sp.to(16), val.to(16));
     this.mmu.w16(val, this.sp);
     this.sp += 2;
     this.sp &= 0xff;
