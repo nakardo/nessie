@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "A NES emulator written in JavaScript",
   "scripts": {
-    "start": "webpack --display=errors-only && node index.js"
+    "start": "babel-node index.js",
+    "build": "webpack"
   },
   "author": "Diego Acosta <diegonake@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
     "babel-plugin-add-module-exports": "^0.2.1",
