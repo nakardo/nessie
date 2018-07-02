@@ -6,6 +6,9 @@ import * as MODE from './address-mode';
 import * as INT from './interrupts';
 
 const debug = Debug('nes:cpu');
+const interrupt = Debug('nes:cpu:int');
+const push = Debug('nes:cpu:push');
+const pull = Debug('nes:cpu:pull');
 
 export default class Cpu {
   a = 0;
@@ -23,28 +26,31 @@ export default class Cpu {
   }
 
   push8(val) {
-    debug('push byte to: %s, value: %s', this.sp.to(16), val.to(16));
+    push('to: %s, byte: %s', this.sp.to(16, 4), val.to(16));
     this.mmu.w8(val, this.sp++);
-    this.sp &= 0xff;
+    this.sp &= 0xffff;
   }
 
   push16(val) {
-    debug('push word to: %s, value: %s', this.sp.to(16), val.to(16));
+    push('to: %s, word: %s', this.sp.to(16, 4), val.to(16));
     this.mmu.w16(val, this.sp);
     this.sp += 2;
-    this.sp &= 0xff;
+    this.sp &= 0xffff;
   }
 
   pull8() {
-    const val = this.mmu.r8(this.sp--);
-    this.sp &= 0xff;
+    const val = this.mmu.r8(this.sp);
+    pull('from: %s, byte: %s', this.sp.to(16, 4), val.to(16));
+    this.sp--;
+    this.sp &= 0xffff;
     return val;
   }
 
   pull16() {
     const val = this.mmu.r16(this.sp);
+    pull('from: %s, word: %s', this.sp.to(16, 4), val.to(16));
     this.sp -= 2;
-    this.sp &= 0xff;
+    this.sp &= 0xffff;
     return val;
   }
 
@@ -134,7 +140,7 @@ export default class Cpu {
     this.pc = this.mmu.r16(INT.IRQ_BRK_ADDR);
     this.t += 7;
 
-    debug('interrupt, pc: %s', this.pc.to(16));
+    interrupt('pc: %s', this.pc.to(16));
   }
 
   decode() {

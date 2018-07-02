@@ -3,7 +3,7 @@ import leftPad from 'left-pad';
 
 Number.prototype.to = function(radix, bytes = 2) {
   assert([2, 16].includes(radix), `${radix} is an invalid radix`);
-  const chars = 2 ** (radix == 2 ? bytes + 1 : 1);
+  const chars = radix == 2 ? 2 ** (bytes + 1) : bytes;
   const value = leftPad(this.toString(radix), chars, 0);
   return `${radix == 2 ? '0b' : '0x'}${value}`;
 };
