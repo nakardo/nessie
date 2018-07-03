@@ -10,6 +10,8 @@ const interrupt = Debug('nes:cpu:int');
 const push = Debug('nes:cpu:push');
 const pull = Debug('nes:cpu:pull');
 
+const MAX_FRAME_CYCLES = 29830;
+
 export default class Cpu {
   a = 0;
   x = 0;
@@ -118,7 +120,7 @@ export default class Cpu {
 
   step() {
     this.t = 0;
-    while (this.t < 29830 /* max frame cycles */) {
+    while (this.t < MAX_FRAME_CYCLES) {
       this.handleInterrupts();
       this.runCycle();
     }
