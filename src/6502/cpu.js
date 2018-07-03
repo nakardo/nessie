@@ -26,33 +26,28 @@ export default class Cpu {
   }
 
   push8(val) {
+    val &= 0xff;
     const addr = 0x100 | this.sp;
-    push('to: %s, byte: %s', addr.to(16, 4), val.to(16));
+    push('to: %s, value: %s', addr.to(16, 4), val.to(16));
     this.mmu.w8(val, addr);
-    this.sp = ++this.sp & 0xff;
+    this.sp = --this.sp & 0xff;
   }
 
   push16(val) {
-    const addr = 0x100 | this.sp;
-    push('to: %s, word: %s', addr.to(16, 4), val.to(16));
-    this.mmu.w16(val, addr);
-    this.sp = (this.sp + 2) & 0xff;
+    this.push8(val >> 8);
+    this.push8(val);
   }
 
   pull8() {
     const addr = 0x100 | this.sp;
     const val = this.mmu.r8(addr);
-    pull('from: %s, byte: %s', addr.to(16, 4), val.to(16));
-    this.sp = --this.sp & 0xff;
+    pull('from: %s, value: %s', addr.to(16, 4), val.to(16));
+    this.sp = ++this.sp & 0xff;
     return val;
   }
 
   pull16() {
-    const addr = 0x100 | this.sp;
-    const val = this.mmu.r16(addr);
-    pull('from: %s, word: %s', addr.to(16, 4), val.to(16));
-    this.sp = (this.sp - 2) & 0xff;
-    return val;
+    return this.pull8() | this.pull8() << 8;
   }
 
   sign(val) {
