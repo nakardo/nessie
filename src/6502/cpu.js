@@ -26,31 +26,32 @@ export default class Cpu {
   }
 
   push8(val) {
-    push('to: %s, byte: %s', this.sp.to(16, 4), val.to(16));
-    this.mmu.w8(val, this.sp++);
-    this.sp &= 0xffff;
+    const addr = 0x100 | this.sp;
+    push('to: %s, byte: %s', addr.to(16, 4), val.to(16));
+    this.mmu.w8(val, addr);
+    this.sp = ++this.sp & 0xff;
   }
 
   push16(val) {
-    push('to: %s, word: %s', this.sp.to(16, 4), val.to(16));
-    this.mmu.w16(val, this.sp);
-    this.sp += 2;
-    this.sp &= 0xffff;
+    const addr = 0x100 | this.sp;
+    push('to: %s, word: %s', addr.to(16, 4), val.to(16));
+    this.mmu.w16(val, addr);
+    this.sp = (this.sp + 2) & 0xff;
   }
 
   pull8() {
-    const val = this.mmu.r8(this.sp);
-    pull('from: %s, byte: %s', this.sp.to(16, 4), val.to(16));
-    this.sp--;
-    this.sp &= 0xffff;
+    const addr = 0x100 | this.sp;
+    const val = this.mmu.r8(addr);
+    pull('from: %s, byte: %s', addr.to(16, 4), val.to(16));
+    this.sp = --this.sp & 0xff;
     return val;
   }
 
   pull16() {
-    const val = this.mmu.r16(this.sp);
-    pull('from: %s, word: %s', this.sp.to(16, 4), val.to(16));
-    this.sp -= 2;
-    this.sp &= 0xffff;
+    const addr = 0x100 | this.sp;
+    const val = this.mmu.r16(addr);
+    pull('from: %s, word: %s', addr.to(16, 4), val.to(16));
+    this.sp = (this.sp - 2) & 0xff;
     return val;
   }
 
