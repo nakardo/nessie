@@ -42,8 +42,12 @@ export default class Ppu {
    */
   locked = false;
 
+  vramAccessIncrement() {
+    return (this.stat & 4) == 0 ? 1 : 32;
+  }
+
   r8(addr) {
-    switch (addr) {
+    switch (0x2000 | addr & 7) {
       case PPU.STAT: {
         const stat = this.stat;
         this.stat &= ~(1 << 7);
@@ -54,9 +58,8 @@ export default class Ppu {
         return this.sprram[this.sprramaddr];
       case PPU.VRAM_DATA: {
         const val = this.vram[this.vramaddr];
-        const inc = (this.stat & 4) == 0 ? 1 : 32;
-        this.vramaddr += inc;
-        this.vramaddr &= 0xffff;
+        this.vramaddr += this.vramAccessIncrement();
+        this.vramaddr &= 0x3fff;
         return val;
       }
       default: break;
@@ -66,7 +69,7 @@ export default class Ppu {
 
   w8(val, addr) {
     val &= 0xff;
-    switch (addr) {
+    switch (0x2000 | addr & 7) {
       case PPU.CTRL1:
         this.ctrl1 = val;
         return;
@@ -96,9 +99,8 @@ export default class Ppu {
       }
       case PPU.VRAM_DATA: {
         this.vram[this.vramaddr] = val;
-        const inc = (this.stat & 4) == 0 ? 1 : 32;
-        this.vramaddr += inc;
-        this.vramaddr &= 0xffff;
+        this.vramaddr += this.vramAccessIncrement();
+        this.vramaddr &= 0x3fff;
         return;
       }
       default: break;
