@@ -30,8 +30,7 @@ export default class Cpu {
     const addr = 0x100 | this.sp;
     this.mmu.w8(val, addr);
     push('to: %s, val: %s', addr.to(16, 4), val.to(16));
-    this.sp--;
-    this.sp &= 0xff;
+    this.sp = --this.sp & 0xff;
   }
 
   push16(val) {
@@ -40,8 +39,7 @@ export default class Cpu {
   }
 
   pull8() {
-    this.sp++;
-    this.sp &= 0xff;
+    this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
     const val = this.mmu.r8(addr);
     pull('from: %s, val: %s', addr.to(16, 4), val.to(16));
