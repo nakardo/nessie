@@ -69,15 +69,18 @@ export default class Mmu {
     addr &= 0xffff;
     switch (addr >> 12) {
       case 0x0: case 0x1:
-        return this.ram[addr & 0x7ff] = val;
+        this.ram[addr & 0x7ff] = val;
+        return;
       case 0x2: case 0x3:
-        return this.ppu.w8(val, addr);
+        this.ppu.w8(val, addr);
+        return;
       case 0x4: case 0x5:
         if (addr < 0x20) {
-          return 0;
+          return;
         }
       case 0x6: case 0x7:
-        return this.sram[addr & 0x1fff] = val;
+        this.sram[addr & 0x1fff] = val;
+        return;
       default: break;
     }
     throw new UnmappedAddressError(addr);

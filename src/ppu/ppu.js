@@ -68,15 +68,18 @@ export default class Ppu {
     val &= 0xff;
     switch (addr) {
       case PPU.CTRL1:
-        return this.ctrl1 = val;
+        this.ctrl1 = val;
+        return;
       case PPU.CTRL2:
-        return this.ctrl2 = val;
+        this.ctrl2 = val;
+        return;
       case PPU.SPR_RAM_DATA:
         this.sprram[this.sprramaddr++] = val;
         this.sprramaddr &= 0xff;
         return;
       case PPU.SPR_RAM_ADDR:
-        return this.sprramaddr = val;
+        this.sprramaddr = val;
+        return;
       case PPU.BG_SCROLL_OFFSET: {
         const offset = 8 * this.ffword;
         this.bgoffset &= ~(0xff << offset);
@@ -96,6 +99,7 @@ export default class Ppu {
         const inc = (this.stat & 4) == 0 ? 1 : 32;
         this.vramaddr += inc;
         this.vramaddr &= 0xffff;
+        return;
       }
       default: break;
     }
