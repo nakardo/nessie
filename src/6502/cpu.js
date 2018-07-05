@@ -159,27 +159,12 @@ export default class Cpu {
     let src, store;
     let totalCycles = cycles;
     switch (mode) {
-      case MODE.IMM:
-        src = this.mmu.r8(next);
-        break;
       case MODE.ABS: {
         const addr = this.mmu.r16(next);
         src = this.mmu.r8(addr);
         store = (val) => this.mmu.w8(val, addr);
         break;
       }
-      case MODE.ZERO_PAGE: {
-        const addr = this.mmu.r8(next);
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
-        break;
-      }
-      case MODE.IMP:
-        break; // Nothing to do here.
-      case MODE.ACC:
-        src = this.a;
-        store = (val) => this.a = val;
-        break;
       case MODE.ABS_X: {
         const addr = this.mmu.r16(next) + this.x;
         src = this.mmu.r8(addr);
@@ -194,27 +179,24 @@ export default class Cpu {
         store = (val) => this.mmu.w8(val, addr);
         break;
       }
-      case MODE.ZERO_PAGE_X: {
-        const addr = this.mmu.r8(next) + this.x;
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.ACC:
+        src = this.a;
+        store = (val) => this.a = val;
         break;
-      }
-      case MODE.ZERO_PAGE_Y: {
-        const addr = this.mmu.r8(next) + this.y;
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.IMM:
+        src = this.mmu.r8(next);
         break;
-      }
-      case MODE.IND:
-        src = this.mmu.r16(this.mmu.r16(next));
-        break;
+      case MODE.IMP:
+        break; // Nothing to do here.
       case MODE.IDX_IND: {
         const addr = this.mmu.r16(this.mmu.r8(next) + this.x);
         src = this.mmu.r8(addr);
         store = (val) => this.mmu.w16(val, addr);
         break;
       }
+      case MODE.IND:
+        src = this.mmu.r16(this.mmu.r16(next));
+        break;
       case MODE.IND_IDX: {
         const addr = this.mmu.r16(this.mmu.r8(next)) + this.y;
         src = this.mmu.r8(addr);
@@ -225,6 +207,24 @@ export default class Cpu {
       case MODE.REL:
         src = this.mmu.r8(next).signed();
         break;
+      case MODE.ZERO_PAGE: {
+        const addr = this.mmu.r8(next);
+        src = this.mmu.r8(addr);
+        store = (val) => this.mmu.w8(val, addr);
+        break;
+      }
+      case MODE.ZERO_PAGE_X: {
+        const addr = (this.mmu.r8(next) + this.x) & 0xff;
+        src = this.mmu.r8(addr);
+        store = (val) => this.mmu.w8(val, addr);
+        break;
+      }
+      case MODE.ZERO_PAGE_Y: {
+        const addr = (this.mmu.r8(next) + this.y) & 0xff;
+        src = this.mmu.r8(addr);
+        store = (val) => this.mmu.w8(val, addr);
+        break;
+      }
       default:
         throw new Error('Unknown addressing mode');
     }
