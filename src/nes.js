@@ -10,7 +10,7 @@ export default class Nes {
   cpu = new Cpu(this.mmu);
 
   loadCart(buf) {
-    this.mmu.loadCart(buf);
+    this.mmu.loadCart(Uint8Array.from(buf));
   }
 
   start() {
