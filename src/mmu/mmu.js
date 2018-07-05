@@ -4,6 +4,13 @@ import Ppu from '../ppu/ppu';
 
 const debug = Debug('nes:mmu');
 
+function createMemory({data, pages, size}) {
+  return new Array(pages).fill(null).map((v, i) => {
+    const offset = i * size;
+    return data.slice(offset, offset + size);
+  });
+}
+
 /**
  * Memory Map
  * ----------
@@ -33,11 +40,18 @@ export default class Mmu {
   sram = new Uint8Array(0x2000);
   prgrom = null;
 
-  loadCart(buf) {
-    const data = Uint8Array.from(buf);
-    this.prgrom = data.slice(16, 0x4000 + 16);
+  loadCart(cart) {
+    const prgRomPageCount = cart[4];
+    debug('16K PRG-ROM page count: %d', prgRomPageCount);
+    debug('8K CHR-ROM page count: %d', cart[5]);
+    debug('ROM Control Byte #1: %s', cart[6].to(2));
+    debug('ROM Control Byte #2: %s', cart[7].to(2));
+    debug('Mapper #: %d', (((cart[6] & 0xf) >> 4) | cart[7] & 0xf0));
 
-    debug('16K PRG-ROM page count: %d', data[4]);
+    const data = cart.slice(16);
+    this.prgrom = createMemory({data, pages: prgRomPageCount, size: 0x4000});
+
+    // TODO(nakardo): pull CHR-ROM data here.
   }
 
   r8(addr) {
@@ -57,15 +71,18 @@ export default class Mmu {
         return this.sram[addr & 0x1fff];
       case 0x8: case 0x9:
       case 0xa: case 0xb:
+        return this.prgrom[0][addr & 0x3fff];
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        return this.prgrom[addr & 0x3fff];
+        return this.prgrom[1][addr & 0x3fff];
       default: break;
     }
     throw new UnmappedAddressError(addr);
   }
 
   w8(val, addr) {
+    debug('write at: %s, val: %s', addr.to(16, 4), val.to(16));
+
     addr &= 0xffff;
     switch (addr >> 12) {
       case 0x0: case 0x1:
