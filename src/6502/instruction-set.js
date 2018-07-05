@@ -104,7 +104,7 @@ const branchCycles = [
   1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0,
 ];
 
-export default (new Array(0xff))
+export default (new Array(0x100))
   .fill(null)
   .map((_, i) => ({
     opcode: i,
