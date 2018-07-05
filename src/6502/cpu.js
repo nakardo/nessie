@@ -30,8 +30,8 @@ export default class Cpu {
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
-    this.mmu.w8(val, addr);
     push('to: %s, val: %s', addr.to(16, 4), val.to(16));
+    this.mmu.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
 
@@ -109,12 +109,13 @@ export default class Cpu {
   }
 
   start() {
-    debug('start');
+    const addr = this.mmu.r16(INT.RESET_ADDR);
     const tick = () => {
       this.step();
       this.loop = raf(tick);
     };
-    this.pc = this.mmu.r16(INT.RESET_ADDR);
+    debug('start at: %s', addr.to(16, 4));
+    this.pc = addr;
     this.loop = raf(tick);
   }
 
