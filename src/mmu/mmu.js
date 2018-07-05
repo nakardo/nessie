@@ -46,7 +46,7 @@ export default class Mmu {
     debug('8K CHR-ROM page count: %d', cart[5]);
     debug('ROM Control Byte #1: %s', cart[6].to(2));
     debug('ROM Control Byte #2: %s', cart[7].to(2));
-    debug('Mapper #: %d', (((cart[6] & 0xf) >> 4) | cart[7] & 0xf0));
+    debug('Mapper #: %d', ((cart[6] >> 4) | cart[7] & 0xf0));
 
     const data = cart.slice(16);
     this.prgrom = createMemory({data, pages: prgRomPageCount, size: 0x4000});
