@@ -562,8 +562,8 @@ export const iny = incrementIdx('y');
  * |  Indirect      |   JMP (Oper)          |    6C   |    3    |    5     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function jmp({cpu, src}) {
-  cpu.pc = src;
+export function jmp({cpu, addr}) {
+  cpu.pc = addr;
 }
 
 /**
@@ -578,9 +578,9 @@ export function jmp({cpu, src}) {
  * |  Absolute      |   JSR Oper            |    20   |    3    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function jsr({cpu, src}) {
+export function jsr({cpu, addr}) {
   cpu.push16(cpu.pc);
-  cpu.pc = src;
+  cpu.pc = addr;
 }
 
 /**

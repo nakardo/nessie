@@ -64,7 +64,8 @@ export default class Ppu {
       }
       default: break;
     }
-    throw new UnmappedAddressError(addr);
+    // throw new UnmappedAddressError(addr);
+    return 0;
   }
 
   w8(val, addr) {

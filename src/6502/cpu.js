@@ -27,11 +27,23 @@ export default class Cpu {
     this.mmu = mmu;
   }
 
+  r8(addr) {
+    return this.mmu.r8(addr);
+  }
+
+  r16(addr) {
+    return this.mmu.r16(addr);
+  }
+
+  w8(val, addr) {
+    this.mmu.w8(val, addr);
+  }
+
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
     push('to: %s, val: %s', addr.to(16, 4), val.to(16));
-    this.mmu.w8(val, addr);
+    this.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
 
@@ -43,7 +55,7 @@ export default class Cpu {
   pull8() {
     this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
-    const val = this.mmu.r8(addr);
+    const val = this.r8(addr);
     pull('from: %s, val: %s', addr.to(16, 4), val.to(16));
     return val;
   }
@@ -109,7 +121,7 @@ export default class Cpu {
   }
 
   start() {
-    const addr = this.mmu.r16(INT.RESET_ADDR);
+    const addr = this.r16(INT.RESET_ADDR);
     const tick = () => {
       this.step();
       this.loop = raf(tick);
@@ -125,7 +137,7 @@ export default class Cpu {
       this.handleInterrupts();
       this.runCycle();
     }
-    this.pc = this.mmu.r16(INT.NMI_ADDR);
+    this.pc = this.r16(INT.NMI_ADDR);
   }
 
   handleInterrupts() {
@@ -136,14 +148,14 @@ export default class Cpu {
     else return;
 
     this.interrupt(false);
-    this.pc = this.mmu.r16(INT.IRQ_BRK_ADDR);
+    this.pc = this.r16(INT.IRQ_BRK_ADDR);
     this.t += 7;
 
     interrupt('pc: %s', this.pc.to(16));
   }
 
   decode() {
-    return instSet[this.mmu.r8(this.pc)];
+    return instSet[this.r8(this.pc)];
   }
 
   pageCrossedCycles({branchCycles, addr}) {
@@ -157,75 +169,67 @@ export default class Cpu {
 
     debug('pc: %s, opcode: %s', this.pc.to(16, 4), opcode.to(16));
 
-    let src, store;
+    let addr, src, store;
     let totalCycles = cycles;
     switch (mode) {
-      case MODE.ABS: {
-        const addr = this.mmu.r16(next);
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.ABS:
+        addr = this.r16(next);
+        src = this.r8(addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
-      case MODE.ABS_X: {
-        const addr = this.mmu.r16(next) + this.x;
-        src = this.mmu.r8(addr);
+      case MODE.ABS_X:
+        addr = this.r16(next) + this.x;
+        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.mmu.w8(val, addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
-      case MODE.ABS_Y: {
-        const addr = this.mmu.r16(next) + this.y;
-        src = this.mmu.r8(addr);
+      case MODE.ABS_Y:
+        addr = this.r16(next) + this.y;
+        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.mmu.w8(val, addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
       case MODE.ACC:
         src = this.a;
         store = (val) => this.a = val;
         break;
       case MODE.IMM:
-        src = this.mmu.r8(next);
+        src = this.r8(addr);
         break;
       case MODE.IMP:
         break; // Nothing to do here.
-      case MODE.IDX_IND: {
-        const addr = this.mmu.r16(this.mmu.r8(next) + this.x);
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w16(val, addr);
+      case MODE.IDX_IND:
+        addr = this.r16(this.r8(next) + this.x);
+        src = this.r8(addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
       case MODE.IND:
-        src = this.mmu.r16(this.mmu.r16(next));
+        addr = this.r16(this.r16(addr));
         break;
-      case MODE.IND_IDX: {
-        const addr = this.mmu.r16(this.mmu.r8(next)) + this.y;
-        src = this.mmu.r8(addr);
+      case MODE.IND_IDX:
+        addr = this.r16(this.r8(next)) + this.y;
+        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.mmu.w16(val, addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
       case MODE.REL:
-        src = this.mmu.r8(next).signed();
+        src = this.r8(addr).signed();
         break;
-      case MODE.ZERO_PAGE: {
-        const addr = this.mmu.r8(next);
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.ZERO_PAGE:
+        addr = this.r8(next);
+        src = this.r8(addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
-      case MODE.ZERO_PAGE_X: {
-        const addr = (this.mmu.r8(next) + this.x) & 0xff;
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.ZERO_PAGE_X:
+        addr = (this.r8(next) + this.x) & 0xff;
+        src = this.r8(addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
-      case MODE.ZERO_PAGE_Y: {
-        const addr = (this.mmu.r8(next) + this.y) & 0xff;
-        src = this.mmu.r8(addr);
-        store = (val) => this.mmu.w8(val, addr);
+      case MODE.ZERO_PAGE_Y:
+        addr = (this.r8(next) + this.y) & 0xff;
+        src = this.r8(addr);
+        store = (val) => this.w8(val, addr);
         break;
-      }
       default:
         throw new Error('Unknown addressing mode');
     }
@@ -233,6 +237,6 @@ export default class Cpu {
     this.pc = (this.pc + bytes) & 0xffff;
     this.t += totalCycles;
 
-    execute({...inst, cpu: this, mmu: this.mmu, src, store});
+    execute({...inst, cpu: this, addr, src, store});
   }
 };

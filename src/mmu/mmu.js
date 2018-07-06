@@ -106,9 +106,4 @@ export default class Mmu {
   r16(addr) {
     return this.r8(addr) | this.r8(++addr) << 8;
   }
-
-  w16(val, addr) {
-    this.w8(val, addr);
-    this.w8(val >> 8, ++addr);
-  }
 };
