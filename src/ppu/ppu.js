@@ -47,7 +47,7 @@ export default class Ppu {
   }
 
   r8(addr) {
-    debug('read at: %s', addr.to(16, 4));
+    debug('read at: %s', addr.to(16, 2));
 
     switch (0x2000 | addr & 7) {
       case PPU.CTRL1:
@@ -74,7 +74,7 @@ export default class Ppu {
   }
 
   w8(val, addr) {
-    debug('write at: %s, val: %s', addr.to(16, 4), val.to(16));
+    debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
     val &= 0xff;
     switch (0x2000 | addr & 7) {

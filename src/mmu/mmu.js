@@ -87,7 +87,7 @@ export default class Mmu {
     assert.ok(typeof val === 'number', 'invalid value');
     assert.ok(typeof addr === 'number', 'invalid address');
 
-    debug('write at: %s, val: %s', addr.to(16, 4), val.to(16));
+    debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
     addr &= 0xffff;
     switch (addr >> 12) {

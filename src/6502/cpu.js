@@ -42,7 +42,7 @@ export default class Cpu {
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
-    push('to: %s, val: %s', addr.to(16, 4), val.to(16));
+    push('to: %s, val: %s', addr.to(16, 2), val.to(16));
     this.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
@@ -56,7 +56,7 @@ export default class Cpu {
     this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
     const val = this.r8(addr);
-    pull('from: %s, val: %s', addr.to(16, 4), val.to(16));
+    pull('from: %s, val: %s', addr.to(16, 2), val.to(16));
     return val;
   }
 
@@ -126,7 +126,7 @@ export default class Cpu {
       this.step();
       this.loop = raf(tick);
     };
-    debug('start at: %s', addr.to(16, 4));
+    debug('start at: %s', addr.to(16, 2));
     this.pc = addr;
     this.loop = raf(tick);
   }
@@ -167,7 +167,7 @@ export default class Cpu {
     const {opcode, mode, bytes, cycles, branchCycles, execute} = inst;
     const next = this.pc + 1;
 
-    debug('pc: %s, opcode: %s', this.pc.to(16, 4), opcode.to(16));
+    debug('pc: %s, opcode: %s', this.pc.to(16, 2), opcode.to(16));
 
     let addr, src, store;
     let totalCycles = cycles;
