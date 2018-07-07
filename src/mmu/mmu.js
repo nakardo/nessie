@@ -1,3 +1,4 @@
+import assert from 'assert';
 import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from '../errors';
 import Ppu from '../ppu/ppu';
@@ -55,6 +56,8 @@ export default class Mmu {
   }
 
   r8(addr) {
+    assert.ok(typeof addr === 'number', 'invalid address');
+
     addr &= 0xffff;
     switch (addr >> 12) {
       case 0x0: case 0x1:
@@ -81,6 +84,9 @@ export default class Mmu {
   }
 
   w8(val, addr) {
+    assert.ok(typeof val === 'number', 'invalid value');
+    assert.ok(typeof addr === 'number', 'invalid address');
+
     debug('write at: %s, val: %s', addr.to(16, 4), val.to(16));
 
     addr &= 0xffff;

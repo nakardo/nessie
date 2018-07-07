@@ -194,7 +194,7 @@ export default class Cpu {
         store = (val) => this.a = val;
         break;
       case MODE.IMM:
-        src = this.r8(addr);
+        src = this.r8(next);
         break;
       case MODE.IMP:
         break; // Nothing to do here.
@@ -204,7 +204,7 @@ export default class Cpu {
         store = (val) => this.w8(val, addr);
         break;
       case MODE.IND:
-        addr = this.r16(this.r16(addr));
+        addr = this.r16(this.r16(next));
         break;
       case MODE.IND_IDX:
         addr = this.r16(this.r8(next)) + this.y;
@@ -213,7 +213,7 @@ export default class Cpu {
         store = (val) => this.w8(val, addr);
         break;
       case MODE.REL:
-        src = this.r8(addr).signed();
+        src = this.r8(next).signed();
         break;
       case MODE.ZERO_PAGE:
         addr = this.r8(next);
