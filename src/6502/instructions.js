@@ -280,7 +280,7 @@ export function bpl({branchCycles, cpu, src}) {
  * 1. A BRK command cannot be masked by setting I.
  */
 export function brk({cpu}) {
-  cpu.push16(cpu.pc);
+  cpu.push16(cpu.pc + 1);
   cpu.break(true);
   cpu.push8(cpu.stat);
   cpu.interrupt(true);
@@ -579,7 +579,7 @@ export function jmp({cpu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function jsr({cpu, addr}) {
-  cpu.push16(cpu.pc);
+  cpu.push16(cpu.pc - 1);
   cpu.pc = addr;
 }
 
@@ -861,7 +861,7 @@ export function rti({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rts({cpu}) {
-  cpu.pc = cpu.pull16() + 1;
+  cpu.pc = (cpu.pull16() + 1) & 0xffff;
 }
 
 /**
