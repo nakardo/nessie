@@ -279,7 +279,7 @@ export function bpl({branchCycles, cpu, src}) {
  * +----------------+-----------------------+---------+---------+----------+
  * 1. A BRK command cannot be masked by setting I.
  */
-export function brk({cpu, mmu, src}) {
+export function brk({cpu}) {
   cpu.push16(cpu.pc);
   cpu.break(true);
   cpu.push8(cpu.stat);
