@@ -489,8 +489,8 @@ export const dey = decrementIdx('y');
  * |  Immediate     |   EOR #Oper           |    49   |    2    |    2     |
  * |  Zero Page     |   EOR Oper            |    45   |    2    |    3     |
  * |  Zero Page,X   |   EOR Oper,X          |    55   |    2    |    4     |
- * |  Absolute      |   EOR Oper            |    40   |    3    |    4     |
- * |  Absolute,X    |   EOR Oper,X          |    50   |    3    |    4*    |
+ * |  Absolute      |   EOR Oper            |    4D   |    3    |    4     |
+ * |  Absolute,X    |   EOR Oper,X          |    5D   |    3    |    4*    |
  * |  Absolute,Y    |   EOR Oper,Y          |    59   |    3    |    4*    |
  * |  (Indirect,X)  |   EOR (Oper,X)        |    41   |    2    |    6     |
  * |  (Indirect),Y  |   EOR (Oper),Y        |    51   |    2    |    5*    |
@@ -841,7 +841,7 @@ export function ror({cpu, src, store}) {
  * +----------------+-----------------------+---------+---------+----------+
  * | Addressing Mode| Assembly Language Form| OP CODE |No. Bytes|No. Cycles|
  * +----------------+-----------------------+---------+---------+----------+
- * |  Implied       |   RTI                 |    4D   |    1    |    6     |
+ * |  Implied       |   RTI                 |    40   |    1    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rti({cpu}) {
