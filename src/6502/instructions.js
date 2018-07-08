@@ -1171,3 +1171,109 @@ export const txs = transfer({from: 'x', to: 'sp'});
  * +----------------+-----------------------+---------+---------+----------+
  */
 export const tya = transfer({from: 'y', to: 'a'});
+
+// Unofficial opcodes
+
+/**
+ * ALR #i ($4B ii; 2 cycles)
+ *
+ * Equivalent to AND #i then LSR A. Some sources call this "ASR"; we do not
+ * follow this out of confusion with the mnemonic for a pseudoinstruction that
+ * combines CMP #$80 (or ANC #$FF) then ROR. Note that ALR #$FE acts like
+ * LSR followed by CLC.
+ */
+export function alr({cpu, src}) {
+  and({cpu, src});
+  lsr({cpu, src: cpu.a, store: (val) => cpu.a = val);
+}
+
+/**
+ * ANC #i ($0B ii, $2B ii; 2 cycles)
+ *
+ * Does AND #i, setting N and Z flags based on the result. Then it
+ * copies N (bit 7) to C. ANC #$FF could be useful for sign-extending, much
+ * like CMP #$80. ANC #$00 acts like LDA #$00 followed by CLC.
+ */
+export function anc({cpu, src}) {
+  and({cpu, src});
+  cpu.carry(cpu.sign());
+}
+
+/**
+ * ARR #i ($6B ii; 2 cycles)
+ *
+ * Similar to AND #i then ROR A, except sets the flags differently. N and Z
+ * are normal, but C is bit 6 and V is bit 6 xor bit 5. A fast way to perform
+ * signed division by 4 is: CMP #$80; ARR #$FF; ROR. This can be extended to
+ * larger powers of two.
+ */
+export function arr({cpu, src}) {
+  and({cpu, src});
+  ror({cpu, src: cpu.a, store: (val) => cpu.a = val);
+  cpu.carry(cpu.a & 0x40 > 0);
+  cpu.overflow(((cpu.a & 0x40) ^ (cpu.a & 0x20)) > 0);
+}
+
+/**
+ * AXS #i ($CB ii, 2 cycles)
+ *
+ * Sets X to {(A AND X) - #value without borrow}, and updates NZC. One might
+ * use TXA AXS #-element_size to iterate through an array of structures or
+ * other elements larger than a byte, where the 6502 architecture usually
+ * prefers a structure of arrays. For example, TXA AXS #$FC could step to the
+ * next OAM entry or to the next APU channel, saving one byte and four cycles
+ * over four INXs. Also called SBX.
+ */
+export function axs({cpu, src}) {
+  src = (cpu.a & cpu.x) - src;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.carry(src < 0x100);
+  cpu.x = src & 0xff;
+}
+
+/**
+ * LAX (d,X) ($A3 dd; 6 cycles)
+ * LAX d ($A7 dd; 3 cycles)
+ * LAX a ($AF aa aa; 4 cycles)
+ * LAX (d),Y ($B3 dd; 5 cycles)
+ * LAX d,Y ($B7 dd; 4 cycles)
+ * LAX a,Y ($BF aa aa; 4 cycles)
+ *
+ * Shortcut for LDA value then TAX. Saves a byte and two cycles and allows use
+ * of the X register with the (d),Y addressing mode. Notice that the immediate
+ * is missing; the opcode that would have been LAX is affected by line noise
+ * on the data bus. MOS 6502: even the bugs have bugs.
+ */
+export function lax(...args) {
+  lda(...args);
+  tax(...args);
+}
+
+/**
+ * SAX (d,X) ($83 dd; 6 cycles)
+ * SAX d ($87 dd; 3 cycles)
+ * SAX a ($8F aa aa; 4 cycles)
+ * SAX d,Y ($97 aa aa; 4 cycles)
+ *
+ * Stores the bitwise AND of A and X. As with STA and STX, no flags are
+ * affected.
+ */
+export function sax({cpu, store}) {
+  store(cpu.a & cpu.x);
+}
+
+/**
+ * DCP (d,X) ($C3 dd; 8 cycles)
+ * DCP d ($C7 dd; 5 cycles)
+ * DCP a ($CF aa aa; 6 cycles)
+ * DCP (d),Y ($D3 dd; 8 cycles)
+ * DCP d,X ($D7 dd; 6 cycles)
+ * DCP a,Y ($DB aa aa; 7 cycles)
+ * DCP a,X ($DF aa aa; 7 cycles)
+ *
+ * Equivalent to DEC value then CMP value, except supporting more addressing
+ * modes. LDA #$FF followed by DCP can be used to check if the decrement
+ * underflows, which is useful for multi-byte decrements.
+ */
+export function dcp({})

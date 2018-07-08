@@ -9,5 +9,5 @@ Number.prototype.to = function(radix, bytes = 1) {
 };
 
 Number.prototype.signed = function() {
-  return this & 0x80 ? -((0xff & ~this) + 1) : this;
+  return this & 0x80 > 0 ? -((0xff & ~this) + 1) : this;
 };
