@@ -7,8 +7,7 @@ import * as INT from './interrupts';
 
 const debug = Debug('nes:cpu');
 const interrupt = Debug('nes:cpu:int');
-const push = Debug('nes:cpu:push');
-const pull = Debug('nes:cpu:pull');
+const stack = Debug('nes:cpu:stack');
 
 const MAX_FRAME_CYCLES = 29830;
 
@@ -42,7 +41,7 @@ export default class Cpu {
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
-    push('to: %s, val: %s', addr.to(16, 2), val.to(16));
+    stack('push to: %s, val: %s', addr.to(16, 2), val.to(16));
     this.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
@@ -56,7 +55,7 @@ export default class Cpu {
     this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
     const val = this.r8(addr);
-    pull('from: %s, val: %s', addr.to(16, 2), val.to(16));
+    stack('pull from: %s, val: %s', addr.to(16, 2), val.to(16));
     return val;
   }
 
