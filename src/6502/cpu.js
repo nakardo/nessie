@@ -26,23 +26,11 @@ export default class Cpu {
     this.mmu = mmu;
   }
 
-  r8(addr) {
-    return this.mmu.r8(addr);
-  }
-
-  r16(addr) {
-    return this.mmu.r16(addr);
-  }
-
-  w8(val, addr) {
-    this.mmu.w8(val, addr);
-  }
-
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
     stack('push to: %s, val: %s', addr.to(16, 2), val.to(16));
-    this.w8(val, addr);
+    this.mmu.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
 
@@ -54,7 +42,7 @@ export default class Cpu {
   pull8() {
     this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
-    const val = this.r8(addr);
+    const val = this.mmu.r8(addr);
     stack('pull from: %s, val: %s', addr.to(16, 2), val.to(16));
     return val;
   }
@@ -120,7 +108,7 @@ export default class Cpu {
   }
 
   start() {
-    const addr = this.r16(INT.RESET_ADDR);
+    const addr = this.mmu.r16(INT.RESET_ADDR);
     const tick = () => {
       this.step();
       this.loop = raf(tick);
@@ -136,7 +124,7 @@ export default class Cpu {
       this.handleInterrupts();
       this.runCycle();
     }
-    // this.pc = this.r16(INT.NMI_ADDR);
+    // this.pc = this.mmu.r16(INT.NMI_ADDR);
     // interrupt('pc: %s', this.pc.to(16));
   }
 
@@ -148,14 +136,14 @@ export default class Cpu {
     else return;
 
     this.interrupt(false);
-    this.pc = this.r16(INT.IRQ_BRK_ADDR);
+    this.pc = this.mmu.r16(INT.IRQ_BRK_ADDR);
     this.t += 7;
 
     interrupt('pc: %s', this.pc.to(16));
   }
 
   decode() {
-    return instSet[this.r8(this.pc)];
+    return instSet[this.mmu.r8(this.pc)];
   }
 
   pageCrossedCycles({branchCycles, addr}) {
@@ -180,34 +168,34 @@ export default class Cpu {
         addr = next;
         break;
       case MODE.ABS:
-        addr = this.r16(next);
+        addr = this.mmu.r16(next);
         break;
       case MODE.ABS_X:
-        addr = this.r16(next) + this.x;
+        addr = this.mmu.r16(next) + this.x;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.ABS_Y:
-        addr = this.r16(next) + this.y;
+        addr = this.mmu.r16(next) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.IND:
-        addr = this.r16(this.r16(next));
+        addr = this.mmu.r16(this.mmu.r16(next));
         break;
       case MODE.IDX_IND:
-        addr = this.r16(this.r8(next) + this.x);
+        addr = this.mmu.r16(this.mmu.r8(next) + this.x);
         break;
       case MODE.IND_IDX:
-        addr = this.r16(this.r8(next)) + this.y;
+        addr = this.mmu.r16(this.mmu.r8(next)) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.ZERO_PAGE:
-        addr = this.r8(next);
+        addr = this.mmu.r8(next);
         break;
       case MODE.ZERO_PAGE_X:
-        addr = (this.r8(next) + this.x) & 0xff;
+        addr = (this.mmu.r8(next) + this.x) & 0xff;
         break;
       case MODE.ZERO_PAGE_Y:
-        addr = (this.r8(next) + this.y) & 0xff;
+        addr = (this.mmu.r8(next) + this.y) & 0xff;
         break;
       default:
         throw new Error('Unknown addressing mode');
@@ -216,6 +204,6 @@ export default class Cpu {
     this.pc = (this.pc + bytes) & 0xffff;
     this.t += totalCycles;
 
-    execute({...inst, cpu: this, addr});
+    execute({...inst, cpu: this, mmu: this.mmu, addr});
   }
 };
