@@ -953,8 +953,8 @@ export const sei = ({cpu}) => cpu.interrupt(true);
  * +----------------+-----------------------+---------+---------+----------+
  * |  Zero Page     |   STA Oper            |    85   |    2    |    3     |
  * |  Zero Page,X   |   STA Oper,X          |    95   |    2    |    4     |
- * |  Absolute      |   STA Oper            |    80   |    3    |    4     |
- * |  Absolute,X    |   STA Oper,X          |    90   |    3    |    5     |
+ * |  Absolute      |   STA Oper            |    8D   |    3    |    4     |
+ * |  Absolute,X    |   STA Oper,X          |    9D   |    3    |    5     |
  * |  Absolute,Y    |   STA Oper, Y         |    99   |    3    |    5     |
  * |  (Indirect,X)  |   STA (Oper,X)        |    81   |    2    |    6     |
  * |  (Indirect),Y  |   STA (Oper),Y        |    91   |    2    |    6     |
