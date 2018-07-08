@@ -1,47 +1,31 @@
-function branch({branchCycles, cpu, src}, cond) {
+function branch({branchCycles, cpu, addr}, cond) {
   if (cond) {
-    const addr = cpu.pc + src;
-    cpu.t += cpu.pageCrossedCycles({branchCycles, addr});
-    cpu.pc = addr & 0xffff;
+    const next = cpu.pc + cpu.r8(addr).signed();
+    cpu.t += cpu.pageCrossedCycles({branchCycles, addr: next});
+    cpu.pc = next & 0xffff;
   }
 }
 
-function compare({cpu, src}, value) {
-  src = value - src;
+function compare({cpu, addr}, val) {
+  const src = val - cpu.r8(addr);
   cpu.carry(src < 0x100);
   cpu.sign(src);
   cpu.zero(src & 0xff);
 }
 
-function decrement({cpu, src}) {
-  src = (src - 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  return src;
-}
-
-function increment({cpu, src}) {
-  src = (src + 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  return src;
-}
-
-const decrementIdx = (idx) => ({cpu}) => {
-  cpu[idx] = decrement({cpu, src: cpu[idx]});
-}
-
-const incrementIdx = (idx) => ({cpu}) => {
-  cpu[idx] = increment({cpu, src: cpu[idx]});
-}
-
-const load = (register) => ({cpu, src}) => {
+const load = (register) => ({cpu, addr}) => {
+  const src = cpu.r8(addr);
   cpu.sign(src);
   cpu.zero(src);
   cpu[register] = src;
 }
 
-const transfer = ({from, to}) => ({cpu}) => load(to)({cpu, src: cpu[from]});
+const transfer = ({from, to}) => ({cpu}) => {
+  const src = cpu[from];
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu[to] = src;
+};
 
 /**
  * ADC               Add memory to accumulator with carry                ADC
@@ -63,8 +47,9 @@ const transfer = ({from, to}) => ({cpu}) => load(to)({cpu, src: cpu[from]});
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function adc({cpu, src}) {
+export function adc({cpu, addr}) {
   const carry = cpu.carry() ? 1 : 0;
+  let src = cpu.r8(addr);
   let temp = src + cpu.a + carry;
   cpu.zero(temp & 0xff);
   if (cpu.decimal()) {
@@ -105,8 +90,8 @@ export function adc({cpu, src}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function and({cpu, src}) {
-  src &= cpu.a;
+export function and({cpu, addr}) {
+  const src = cpu.r8(addr) & cpu.a;
   cpu.sign(src);
   cpu.zero(src);
   cpu.a = src;
@@ -129,13 +114,13 @@ export function and({cpu, src}) {
  * |  Absolute, X   |   ASL Oper,X          |    1E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function asl({cpu, src, store}) {
+export function asl({cpu, addr}) {
+  let src = cpu.r8(addr);
   cpu.carry(src & 0x80);
-  src <<= 1;
-  src &= 0xff;
+  src = (src << 1) & 0xff;
   cpu.sign(src);
   cpu.zero(src);
-  store(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -151,8 +136,8 @@ export function asl({cpu, src, store}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bcc({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, !cpu.carry());
+export function bcc({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, !cpu.carry());
 }
 
 /**
@@ -169,8 +154,8 @@ export function bcc({branchCycles, cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function bcs({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, cpu.carry());
+export function bcs({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, cpu.carry());
 }
 
 /**
@@ -186,8 +171,8 @@ export function bcs({branchCycles, cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function beq({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, cpu.zero());
+export function beq({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, cpu.zero());
 }
 
 /**
@@ -206,7 +191,8 @@ export function beq({branchCycles, cpu, src}) {
  * |  Absolute      |   BIT Oper            |    2C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function bit({cpu, src}) {
+export function bit({cpu, addr}) {
+  const src = cpu.r8(addr);
   cpu.sign(src);
   cpu.overflow(src & 0x40);
   cpu.zero(src & cpu.a);
@@ -226,8 +212,8 @@ export function bit({cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 1 if branch occurs to different page.
  */
-export function bmi({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, cpu.sign());
+export function bmi({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, cpu.sign());
 }
 
 /**
@@ -244,8 +230,8 @@ export function bmi({branchCycles, cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bne({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, !cpu.zero());
+export function bne({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, !cpu.zero());
 }
 
 /**
@@ -262,8 +248,8 @@ export function bne({branchCycles, cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bpl({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, !cpu.sign());
+export function bpl({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, !cpu.sign());
 }
 
 /**
@@ -300,8 +286,8 @@ export function brk({cpu}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvc({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, !cpu.overflow());
+export function bvc({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, !cpu.overflow());
 }
 
 /**
@@ -318,8 +304,8 @@ export function bvc({branchCycles, cpu, src}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvs({branchCycles, cpu, src}) {
-  branch({branchCycles, cpu, src}, cpu.overflow());
+export function bvs({branchCycles, cpu, addr}) {
+  branch({branchCycles, cpu, addr}, cpu.overflow());
 }
 
 /**
@@ -398,7 +384,7 @@ export const clv = ({cpu}) => cpu.overflow(false);
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export const cmp = ({cpu, src}) => compare({cpu, src}, cpu.a);
+export const cmp = ({cpu, addr}) => compare({cpu, addr}, cpu.a);
 
 /**
  * CPX                  CPX Compare Memory and Index X                   CPX
@@ -413,7 +399,7 @@ export const cmp = ({cpu, src}) => compare({cpu, src}, cpu.a);
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpx = ({cpu, src}) => compare({cpu, src}, cpu.x);
+export const cpx = ({cpu, addr}) => compare({cpu, addr}, cpu.x);
 
 /**
  * CPY                  CPY Compare memory and index Y                   CPY
@@ -428,7 +414,7 @@ export const cpx = ({cpu, src}) => compare({cpu, src}, cpu.x);
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpy = ({cpu, src}) => compare({cpu, src}, cpu.y);
+export const cpy = ({cpu, addr}) => compare({cpu, addr}, cpu.y);
 
 /**
  * DEC                   DEC Decrement memory by one                     DEC
@@ -445,8 +431,11 @@ export const cpy = ({cpu, src}) => compare({cpu, src}, cpu.y);
  * |  Absolute,X    |   DEC Oper,X          |    DE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function dec({cpu, src, store}) {
-  store(decrement({cpu, src}));
+export function dec({cpu, addr}) {
+  const src = (cpu.r8(addr) - 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -461,7 +450,12 @@ export function dec({cpu, src, store}) {
  * |  Implied       |   DEX                 |    CA   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const dex = decrementIdx('x');
+export function dex({cpu}) {
+  const src = (cpu.x - 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.x = src;
+}
 
 /**
  * DEY                   DEY Decrement index Y by one                    DEY
@@ -475,7 +469,12 @@ export const dex = decrementIdx('x');
  * |  Implied       |   DEY                 |    88   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const dey = decrementIdx('y');
+export function dey({cpu}) {
+  const src = (cpu.y - 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.y = src;
+}
 
 /**
  * EOR            EOR "Exclusive-Or" memory with accumulator             EOR
@@ -497,8 +496,8 @@ export const dey = decrementIdx('y');
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function eor({cpu, src}) {
-  src ^= cpu.a;
+export function eor({cpu, addr}) {
+  const src = cpu.r8(addr) ^ cpu.a;
   cpu.sign(src);
   cpu.zero(src);
   cpu.a = src;
@@ -518,8 +517,11 @@ export function eor({cpu, src}) {
  * |  Absolute,X    |   INC Oper,X          |    FE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function inc({cpu, src, store}) {
-  store(increment({cpu, src}));
+export function inc({cpu, addr}) {
+  const src = (cpu.r8(addr) + 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -533,7 +535,13 @@ export function inc({cpu, src, store}) {
  * |  Implied       |   INX                 |    E8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const inx = incrementIdx('x');
+export function inx({cpu}) {
+  const src = ++cpu.x & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.x = src;
+}
+
 
 /**
  * INY                    INY Increment Index Y by one                   INY
@@ -547,7 +555,12 @@ export const inx = incrementIdx('x');
  * |  Implied       |   INY                 |    C8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const iny = incrementIdx('y');
+export function iny({cpu}) {
+  const src = ++cpu.y & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.y = src;
+}
 
 /**
  * JMP                     JMP Jump to new location                      JMP
@@ -659,12 +672,13 @@ export const ldy = load('y');
  * |  Absolute,X    |   LSR Oper,X          |    5E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function lsr({cpu, src, store}) {
-  cpu.carry(src & 0x01);
+export function lsr({cpu, addr}) {
+  let src = cpu.r8(addr);
+  cpu.carry(src & 1);
   src >>= 1;
   cpu.sign(src);
   cpu.zero(src);
-  store(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -700,8 +714,8 @@ export function nop() {};
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 on page crossing
  */
-export function ora({cpu, src}) {
-  src |= cpu.a;
+export function ora({cpu, addr}) {
+  const src = cpu.r8(addr) | cpu.a;
   cpu.sign(src);
   cpu.zero(src);
   cpu.a = src;
@@ -792,14 +806,14 @@ export function plp({cpu}) {
  * |  Absolute,X    |   ROL Oper,X          |    3E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rol({cpu, src, store}) {
-  src <<= 1;
-  if (cpu.carry()) src |= 0x1;
+export function rol({cpu, addr}) {
+  let src = cpu.r8(addr) << 1;
+  if (cpu.carry()) src |= 1;
   cpu.carry(src > 0xff);
   src &= 0xff;
   cpu.sign(src);
   cpu.zero(src);
-  store(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -824,13 +838,14 @@ export function rol({cpu, src, store}) {
  *   Note: ROR instruction is available on MCS650X microprocessors after
  *         June, 1976.
  */
-export function ror({cpu, src, store}) {
+export function ror({cpu, addr}) {
+  let src = cpu.r8(addr);
   if (cpu.carry()) src |= 0x100;
-  cpu.carry(src & 0x01);
+  cpu.carry(src & 1);
   src >>= 1;
   cpu.sign(src);
   cpu.zero(src);
-  store(src);
+  cpu.w8(src, addr);
 }
 
 /**
@@ -884,8 +899,9 @@ export function rts({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function sbc({cpu, src}) {
+export function sbc({cpu, addr}) {
   const carry = cpu.carry() ? 0 : 1;
+  let src = cpu.r8(addr);
   let temp = cpu.a - src - carry;
   cpu.sign(temp);
   cpu.zero(temp & 0xff);
@@ -960,7 +976,7 @@ export const sei = ({cpu}) => cpu.interrupt(true);
  * |  (Indirect),Y  |   STA (Oper),Y        |    91   |    2    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const sta = ({cpu, store}) => store(cpu.a);
+export const sta = ({cpu, addr}) => cpu.w8(cpu.a, addr);
 
 /**
  * STX                    STX Store index X in memory                    STX
@@ -976,7 +992,7 @@ export const sta = ({cpu, store}) => store(cpu.a);
  * |  Absolute      |   STX Oper            |    8E   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const stx = ({cpu, store}) => store(cpu.x);
+export const stx = ({cpu, addr}) => cpu.w8(cpu.x, addr);
 
 /**
  * STY                    STY Store index Y in memory                    STY
@@ -992,7 +1008,7 @@ export const stx = ({cpu, store}) => store(cpu.x);
  * |  Absolute      |   STY Oper            |    8C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const sty = ({cpu, store}) => store(cpu.y);
+export const sty = ({cpu, addr}) => cpu.w8(cpu.y, addr);
 
 /**
  * TAX                TAX Transfer accumulator to index X                TAX

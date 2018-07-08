@@ -169,66 +169,45 @@ export default class Cpu {
 
     debug('pc: %s, opcode: %s', this.pc.to(16, 2), opcode.to(16));
 
-    let addr, src, store;
+    let addr;
     let totalCycles = cycles;
     switch (mode) {
+      case MODE.ACC:
+        break;
+      case MODE.IMP:
+      case MODE.REL:
+      case MODE.IMM:
+        addr = next;
+        break;
       case MODE.ABS:
         addr = this.r16(next);
-        src = this.r8(addr);
-        store = (val) => this.w8(val, addr);
         break;
       case MODE.ABS_X:
         addr = this.r16(next) + this.x;
-        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.w8(val, addr);
         break;
       case MODE.ABS_Y:
         addr = this.r16(next) + this.y;
-        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.w8(val, addr);
-        break;
-      case MODE.ACC:
-        src = this.a;
-        store = (val) => this.a = val;
-        break;
-      case MODE.IMM:
-        src = this.r8(next);
-        break;
-      case MODE.IMP:
-        break; // Nothing to do here.
-      case MODE.IDX_IND:
-        addr = this.r16(this.r8(next) + this.x);
-        src = this.r8(addr);
-        store = (val) => this.w8(val, addr);
         break;
       case MODE.IND:
         addr = this.r16(this.r16(next));
         break;
+      case MODE.IDX_IND:
+        addr = this.r16(this.r8(next) + this.x);
+        break;
       case MODE.IND_IDX:
         addr = this.r16(this.r8(next)) + this.y;
-        src = this.r8(addr);
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
-        store = (val) => this.w8(val, addr);
-        break;
-      case MODE.REL:
-        src = this.r8(next).signed();
         break;
       case MODE.ZERO_PAGE:
         addr = this.r8(next);
-        src = this.r8(addr);
-        store = (val) => this.w8(val, addr);
         break;
       case MODE.ZERO_PAGE_X:
         addr = (this.r8(next) + this.x) & 0xff;
-        src = this.r8(addr);
-        store = (val) => this.w8(val, addr);
         break;
       case MODE.ZERO_PAGE_Y:
         addr = (this.r8(next) + this.y) & 0xff;
-        src = this.r8(addr);
-        store = (val) => this.w8(val, addr);
         break;
       default:
         throw new Error('Unknown addressing mode');
@@ -237,6 +216,6 @@ export default class Cpu {
     this.pc = (this.pc + bytes) & 0xffff;
     this.t += totalCycles;
 
-    execute({...inst, cpu: this, addr, src, store});
+    execute({...inst, cpu: this, addr});
   }
 };
