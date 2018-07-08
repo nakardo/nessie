@@ -5,6 +5,7 @@ import * as PPU from './registers'
 const debug = Debug('nes:ppu');
 
 export default class Ppu {
+  registers = new Uint8Array(8);
   ctrl1 = 0;
   ctrl2 = 0;
   stat = 0;
@@ -48,12 +49,9 @@ export default class Ppu {
 
   r8(addr) {
     debug('read at: %s', addr.to(16, 2));
+    return this.registers[addr & 7];
 
     switch (0x2000 | addr & 7) {
-      case PPU.CTRL1:
-        return this.ctrl1;
-      case PPU.CTRL2:
-        return this.ctrl2;
       case PPU.STAT: {
         const stat = this.stat;
         this.stat &= ~(1 << 7);
@@ -75,6 +73,8 @@ export default class Ppu {
 
   w8(val, addr) {
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
+    this.registers[addr & 7] = val & 0xff;
+    return;
 
     val &= 0xff;
     switch (0x2000 | addr & 7) {

@@ -136,7 +136,8 @@ export default class Cpu {
       this.handleInterrupts();
       this.runCycle();
     }
-    this.pc = this.r16(INT.NMI_ADDR);
+    // this.pc = this.r16(INT.NMI_ADDR);
+    // interrupt('pc: %s', this.pc.to(16));
   }
 
   handleInterrupts() {
