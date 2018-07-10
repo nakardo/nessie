@@ -972,7 +972,7 @@ export function rts({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function sbc({cpu, addr}) {
+export function sbc({cpu, mmu, addr}) {
   const carry = cpu.carry() ? 0 : 1;
   const src = mmu.r8(addr);
 
@@ -1200,8 +1200,9 @@ export function alr(...args) {
  * copies N (bit 7) to C. ANC #$FF could be useful for sign-extending, much
  * like CMP #$80. ANC #$00 acts like LDA #$00 followed by CLC.
  */
-export function anc({cpu, src}) {
-  and({cpu, src});
+export function anc(...args) {
+  const {cpu} = args[0];
+  and(...args);
   cpu.carry(cpu.sign());
 }
 
