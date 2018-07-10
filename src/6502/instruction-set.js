@@ -5,8 +5,8 @@ import {
   sed, sei, sta, stx, sty, tax, tay, tsx, txa, txs, tya,
 } from './instructions';
 
-function unk() {
-  throw new Error('Unknown instruction');
+function unk({opcode}) {
+  throw new Error(`Unknown opcode: ${opcode.to(16)}`);
 }
 
 const execute = [
