@@ -1471,7 +1471,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export function shx({cpu, mmu, add}) {
+export function shx({cpu, mmu, addr}) {
   const src = mmu.r8(addr);
   const val = cpu.x & ((src >> 4) + 1);
   mmu.w8(val, addr);
@@ -1491,7 +1491,7 @@ export function shx({cpu, mmu, add}) {
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export function shy({cpu, mmu, add}) {
+export function shy({cpu, mmu, addr}) {
   const src = mmu.r8(addr);
   const val = cpu.y & ((src >> 4) + 1);
   mmu.w8(val, addr);
