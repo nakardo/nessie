@@ -143,7 +143,9 @@ export default class Cpu {
   }
 
   decode() {
-    return instSet[this.mmu.r8(this.pc)];
+    const opcode = this.mmu.r8(this.pc);
+    debug('pc: %s, opcode: %s', this.pc.to(16, 2), opcode.to(16));
+    return instSet[opcode];
   }
 
   pageCrossedCycles({branchCycles, addr}) {
@@ -154,8 +156,6 @@ export default class Cpu {
     const inst = this.decode();
     const {opcode, mode, bytes, cycles, branchCycles, execute} = inst;
     const next = this.pc + 1;
-
-    debug('pc: %s, opcode: %s', this.pc.to(16, 2), opcode.to(16));
 
     let addr;
     let totalCycles = cycles;

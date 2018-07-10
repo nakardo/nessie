@@ -32,7 +32,7 @@ const combine = (...fns) => function combine(...args) {
 }
 
 function unk({opcode}) {
-  throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
+  // throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
 }
 
 // Official opcodes

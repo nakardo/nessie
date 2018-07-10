@@ -25,7 +25,7 @@ function createMemory({data, pages, size}) {
  * | $2000   | 8     |       | Registers             |
  * | $2008   | $1FF8 |  R    | Registers             |
  * | $4000   | $20   |       | Registers             |
- * | $4020   | $1FDF |       | Expansion ROM         |
+ * | $4020   | $1FE0 |       | Expansion ROM         |
  * | $6000   | $2000 |       | SRAM                  |
  * | $8000   | $4000 |       | PRG-ROM               |
  * | $C000   | $4000 |       | PRG-ROM               |
@@ -37,7 +37,7 @@ function createMemory({data, pages, size}) {
 export default class Mmu {
   ram = new Uint8Array(0x800);
   ppu = new Ppu();
-  exrom = new Uint8Array(0x1fdf);
+  exrom = new Uint8Array(0x1fe0);
   sram = new Uint8Array(0x2000);
   prgrom = null;
 

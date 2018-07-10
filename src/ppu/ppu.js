@@ -49,12 +49,20 @@ export default class Ppu {
   r8(addr) {
     debug('read at: %s', addr.to(16, 2));
     switch (0x2000 | addr & 7) {
+      case PPU.CTRL1:
+        return this.ctrl1;
+      case PPU.CTRL2:
+        return this.ctrl2;
       case PPU.STAT: {
         const stat = this.stat;
         this.stat &= ~(1 << 7);
         this.ffword ^= 1;
         return stat;
       }
+      case PPU.SPR_RAM_ADDR:
+        return this.sprramaddr;
+      case PPU.BG_SCROLL_OFFSET:
+        return this.bgoffset;
       case PPU.SPR_RAM_DATA:
         return this.sprram[this.sprramaddr];
       case PPU.VRAM_DATA: {
