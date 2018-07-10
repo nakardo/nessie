@@ -31,6 +31,10 @@ const combine = (...fns) => function combine(...args) {
   [...fns].forEach((fn) => fn(...args));
 }
 
+function unk({opcode}) {
+  throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
+}
+
 // Official opcodes
 
 /**
@@ -1181,24 +1185,15 @@ export const tya = transfer({from: 'y', to: 'a'});
 // Unofficial opcodes
 
 /**
- * ALR #i ($4B ii; 2 cycles)
+ * AAC (ANC) [ANC]
  *
- * Equivalent to AND #i then LSR A. Some sources call this "ASR"; we do not
- * follow this out of confusion with the mnemonic for a pseudoinstruction that
- * combines CMP #$80 (or ANC #$FF) then ROR. Note that ALR #$FE acts like
- * LSR followed by CLC.
- */
-export function alr(...args) {
-  and(...args);
-  lsr({...args, opcode: 0x4a});
-}
-
-/**
- * ANC #i ($0B ii, $2B ii; 2 cycles)
+ * AND byte with accumulator. If result is negative then carry is set. Status
+ * flags: N,Z,C
  *
- * Does AND #i, setting N and Z flags based on the result. Then it
- * copies N (bit 7) to C. ANC #$FF could be useful for sign-extending, much
- * like CMP #$80. ANC #$00 acts like LDA #$00 followed by CLC.
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Immediate   |AAC #arg   |$0B| 2 | 2
+ * Immediate   |AAC #arg   |$2B| 2 | 2
  */
 export function anc(...args) {
   const {cpu} = args[0];
@@ -1207,12 +1202,38 @@ export function anc(...args) {
 }
 
 /**
- * ARR #i ($6B ii; 2 cycles)
+ * AAX (SAX) [AXS]
  *
- * Similar to AND #i then ROR A, except sets the flags differently. N and Z
- * are normal, but C is bit 6 and V is bit 6 xor bit 5. A fast way to perform
- * signed division by 4 is: CMP #$80; ARR #$FF; ROR. This can be extended to
- * larger powers of two.
+ * AND X register with accumulator and store result in memory. Status
+ * flags: N,Z
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |AAX arg    |$87| 2 | 3
+ * Zero Page,Y |AAX arg,Y  |$97| 2 | 4
+ * (Indirect,X)|AAX (arg,X)|$83| 2 | 6
+ * Absolute    |AAX arg    |$8F| 3 | 4.
+ */
+export function sax({cpu, mmu, addr}) {
+  mmu.w8(cpu.a & cpu.x);
+}
+
+/**
+ *  ARR (ARR) [ARR]
+ *
+ *  AND byte with accumulator, then rotate one bit right in accumulator and
+ *  check bit 5 and 6:
+ *
+ *  - If both bits are 1: set C, clear V.
+ *  - If both bits are 0: clear C and V.
+ *  - If only bit 5 is 1: set V, clear C.
+ *  - If only bit 6 is 1: set C and V.
+ *
+ *  Status flags: N,V,Z,C
+ *
+ *  Addressing  |Mnemonics  |Opc|Sz | n
+ *  ------------|-----------|---|---|---
+ *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
 export function arr(...args) {
   const {cpu} = args[0];
@@ -1223,14 +1244,44 @@ export function arr(...args) {
 }
 
 /**
- * AXS #i ($CB ii, 2 cycles)
+ * ASR (ASR) [ALR]
  *
- * Sets X to {(A AND X) - #value without borrow}, and updates NZC. One might
- * use TXA AXS #-element_size to iterate through an array of structures or
- * other elements larger than a byte, where the 6502 architecture usually
- * prefers a structure of arrays. For example, TXA AXS #$FC could step to the
- * next OAM entry or to the next APU channel, saving one byte and four cycles
- * over four INXs. Also called SBX.
+ * AND byte with accumulator, then shift right one bit in accumulator.
+ * Status flags: N,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Immediate   |ASR #arg   |$4B| 2 | 2
+ */
+export function alr(...args) {
+  and(...args);
+  lsr({...args, opcode: 0x4a});
+}
+
+/**
+ * AXA (SHA) [AXA]
+ *
+ * AND X register with accumulator then AND result with 7 and store in memory.
+ * Status flags: -
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Absolute,Y  |AXA arg,Y  |$9F| 3 | 5
+ * (Indirect),Y|AXA arg    |$93| 2 | 6
+ */
+export function ahx({cpu, mmu, addr}) {
+  mmu.w8(cpu.x & cpu.a & 7);
+}
+
+/**
+ * AXS (SBX) [SAX]
+ *
+ * AND X register with accumulator and store result in X register, then
+ * subtract byte from X register (without borrow).
+ * Status flags: N,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Immediate   |AXS #arg   |$CB| 2 | 2
  */
 export function axs({cpu, mmu, addr}) {
   const src = (cpu.a & cpu.x) - mmu.r8(addr);
@@ -1241,151 +1292,241 @@ export function axs({cpu, mmu, addr}) {
 }
 
 /**
- * LAX (d,X) ($A3 dd; 6 cycles)
- * LAX d ($A7 dd; 3 cycles)
- * LAX a ($AF aa aa; 4 cycles)
- * LAX (d),Y ($B3 dd; 5 cycles)
- * LAX d,Y ($B7 dd; 4 cycles)
- * LAX a,Y ($BF aa aa; 4 cycles)
+ * DCP (DCP) [DCM]
  *
- * Shortcut for LDA value then TAX. Saves a byte and two cycles and allows use
- * of the X register with the (d),Y addressing mode. Notice that the immediate
- * is missing; the opcode that would have been LAX is affected by line noise
- * on the data bus. MOS 6502: even the bugs have bugs.
- */
-export const lax = combine(lda, tax);
-
-/**
- * SAX (d,X) ($83 dd; 6 cycles)
- * SAX d ($87 dd; 3 cycles)
- * SAX a ($8F aa aa; 4 cycles)
- * SAX d,Y ($97 aa aa; 4 cycles)
+ * Subtract 1 from memory (without borrow).
+ * Status flags: C
  *
- * Stores the bitwise AND of A and X. As with STA and STX, no flags are
- * affected.
- */
-export function sax({cpu, mmu, addr}) {
-  mmu.w8(cpu.a & cpu.x);
-}
-
-/**
- * DCP (d,X) ($C3 dd; 8 cycles)
- * DCP d ($C7 dd; 5 cycles)
- * DCP a ($CF aa aa; 6 cycles)
- * DCP (d),Y ($D3 dd; 8 cycles)
- * DCP d,X ($D7 dd; 6 cycles)
- * DCP a,Y ($DB aa aa; 7 cycles)
- * DCP a,X ($DF aa aa; 7 cycles)
- *
- * Equivalent to DEC value then CMP value, except supporting more addressing
- * modes. LDA #$FF followed by DCP can be used to check if the decrement
- * underflows, which is useful for multi-byte decrements.
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |DCP arg    |$C7| 2 | 5
+ * Zero Page,X |DCP arg,X  |$D7| 2 | 6
+ * Absolute    |DCP arg    |$CF| 3 | 6
+ * Absolute,X  |DCP arg,X  |$DF| 3 | 7
+ * Absolute,Y  |DCP arg,Y  |$DB| 3 | 7
+ * (Indirect,X)|DCP (arg,X)|$C3| 2 | 8
+ * (Indirect),Y|DCP (arg),Y|$D3| 2 | 8
  */
 export const dcp = combine(dec, cmp);
 
 /**
- * ISC (d,X) ($E3 dd; 8 cycles)
- * ISC d ($E7 dd; 5 cycles)
- * ISC a ($EF aa aa; 6 cycles)
- * ISC (d),Y ($F3 dd; 8 cycles)
- * ISC d,X ($F7 dd; 6 cycles)
- * ISC a,Y ($FB aa aa; 7 cycles)
- * ISC a,X ($FF aa aa; 7 cycles)
+ * ISC (ISB) [INS]
  *
- * Equivalent to INC value then SBC value, except supporting more addressing
- * modes.
+ * Increase memory by one, then subtract memory from accumulator (with borrow).
+ * Status flags: N,V,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |ISC arg    |$E7| 2 | 5
+ * Zero Page,X |ISC arg,X  |$F7| 2 | 6
+ * Absolute    |ISC arg    |$EF| 3 | 6
+ * Absolute,X  |ISC arg,X  |$FF| 3 | 7
+ * Absolute,Y  |ISC arg,Y  |$FB| 3 | 7
+ * (Indirect,X)|ISC (arg,X)|$E3| 2 | 8
+ * (Indirect),Y|ISC (arg),Y|$F3| 2 | 8
  */
 export const isc = combine(inc, sbc);
 
 /**
- * RLA (d,X) ($23 dd; 8 cycles)
- * RLA d ($27 dd; 5 cycles)
- * RLA a ($2F aa aa; 6 cycles)
- * RLA (d),Y ($33 dd; 8 cycles)
- * RLA d,X ($37 dd; 6 cycles)
- * RLA a,Y ($3B aa aa; 7 cycles)
- * RLA a,X ($3F aa aa; 7 cycles)
+ * KIL (JAM) [HLT]
  *
- * Equivalent to ROL value then AND value, except supporting more addressing
- * modes. LDA #$FF followed by RLA is an efficient way to rotate a variable
- * while also loading it in A.
+ * Stop program counter (processor lock up).
+ * Status flags: -
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Implied     |KIL        |$02| 1 | -
+ * Implied     |KIL        |$12| 1 | -
+ * Implied     |KIL        |$22| 1 | -
+ * Implied     |KIL        |$32| 1 | -
+ * Implied     |KIL        |$42| 1 | -
+ * Implied     |KIL        |$52| 1 | -
+ * Implied     |KIL        |$62| 1 | -
+ * Implied     |KIL        |$72| 1 | -
+ * Implied     |KIL        |$92| 1 | -
+ * Implied     |KIL        |$B2| 1 | -
+ * Implied     |KIL        |$D2| 1 | -
+ * Implied     |KIL        |$F2| 1 | -
+ */
+export const stp = unk;
+
+/**
+ * LAR (LAE) [LAS]
+ *
+ * AND memory with stack pointer, transfer result to accumulator, X
+ * register and stack pointer.
+ * Status flags: N,Z
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Absolute,Y  |LAR arg,Y  |$BB| 3 | 4 *
+ */
+export function las({cpu, mmu, addr}) {
+  const src = cpu.sp & mmu.r8(addr);
+  cpu.sign(src);
+  cpu.zero(src);
+  cpu.a = cpu.x = cpu.sp = src;
+}
+
+/**
+ * LAX (LAX) [LAX]
+ *
+ * Load accumulator and X register with memory.
+ * Status flags: N,Z
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |LAX arg    |$A7| 2 | 3
+ * Zero Page,Y |LAX arg,Y  |$B7| 2 | 4
+ * Absolute    |LAX arg    |$AF| 3 | 4
+ * Absolute,Y  |LAX arg,Y  |$BF| 3 | 4 *
+ * (Indirect,X)|LAX (arg,X)|$A3| 2 | 6
+ * (Indirect),Y|LAX (arg),Y|$B3| 2 | 5 *
+ */
+export const lax = combine(lda, tax);
+
+/**
+ * RLA (RLA) [RLA]
+ *
+ * Rotate one bit left in memory, then AND accumulator with memory. Status
+ * flags: N,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |RLA arg    |$27| 2 | 5
+ * Zero Page,X |RLA arg,X  |$37| 2 | 6
+ * Absolute    |RLA arg    |$2F| 3 | 6
+ * Absolute,X  |RLA arg,X  |$3F| 3 | 7
+ * Absolute,Y  |RLA arg,Y  |$3B| 3 | 7
+ * (Indirect,X)|RLA (arg,X)|$23| 2 | 8
+ * (Indirect),Y|RLA (arg),Y|$33| 2 | 8
  */
 export const rla = combine(rol, and);
 
 /**
- * RRA (d,X) ($63 dd; 8 cycles)
- * RRA d ($67 dd; 5 cycles)
- * RRA a ($6F aa aa; 6 cycles)
- * RRA (d),Y ($73 dd; 8 cycles)
- * RRA d,X ($77 dd; 6 cycles)
- * RRA a,Y ($7B aa aa; 7 cycles)
- * RRA a,X ($7F aa aa; 7 cycles)
+ * RRA (RRA) [RRA]
  *
- * Equivalent to ROR value then ADC value, except supporting more addressing
- * modes. Essentially this computes A + value / 2, where value is 9-bit and the
- * division is rounded up.
+ * Rotate one bit right in memory, then add memory to accumulator (with carry).
+ * Status flags: N,V,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |RRA arg    |$67| 2 | 5
+ * Zero Page,X |RRA arg,X  |$77| 2 | 6
+ * Absolute    |RRA arg    |$6F| 3 | 6
+ * Absolute,X  |RRA arg,X  |$7F| 3 | 7
+ * Absolute,Y  |RRA arg,Y  |$7B| 3 | 7
+ * (Indirect,X)|RRA (arg,X)|$63| 2 | 8
+ * (Indirect),Y|RRA (arg),Y|$73| 2 | 8
  */
 export const rra = combine(ror, adc);
 
 /**
- * SLO (d,X) ($03 dd; 8 cycles)
- * SLO d ($07 dd; 5 cycles)
- * SLO a ($0F aa aa; 6 cycles)
- * SLO (d),Y ($13 dd; 8 cycles)
- * SLO d,X ($17 dd; 6 cycles)
- * SLO a,Y ($1B aa aa; 7 cycles)
- * SLO a,X ($1F aa aa; 7 cycles)
+ * SLO (SLO) [ASO]
  *
- * Equivalent to ASL value then ORA value, except supporting more addressing
- * modes. LDA #0 followed by SLO is an efficient way to shift a variable while
- * also loading it in A.
+ * Shift left one bit in memory, then OR accumulator with memory.
+ * Status flags: N,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |SLO arg    |$07| 2 | 5
+ * Zero Page,X |SLO arg,X  |$17| 2 | 6
+ * Absolute    |SLO arg    |$0F| 3 | 6
+ * Absolute,X  |SLO arg,X  |$1F| 3 | 7
+ * Absolute,Y  |SLO arg,Y  |$1B| 3 | 7
+ * (Indirect,X)|SLO (arg,X)|$03| 2 | 8
+ * (Indirect),Y|SLO (arg),Y|$13| 2 | 8
  */
 export const slo = combine(asl, ora);
 
 /**
- * SRE (d,X) ($43 dd; 8 cycles)
- * SRE d ($47 dd; 5 cycles)
- * SRE a ($4F aa aa; 6 cycles)
- * SRE (d),Y ($53 dd; 8 cycles)
- * SRE d,X ($57 dd; 6 cycles)
- * SRE a,Y ($5B aa aa; 7 cycles)
- * SRE a,X ($5F aa aa; 7 cycles)
+ * SRE (SRE) [LSE]
  *
- * Equivalent to LSR value then EOR value, except supporting more addressing
- * modes. LDA #0 followed by SRE is an efficient way to shift a variable while
- * also loading it in A.
+ * Shift right one bit in memory, then EOR accumulator with memory. Status
+ * flags: N,Z,C
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Zero Page   |SRE arg    |$47| 2 | 5
+ * Zero Page,X |SRE arg,X  |$57| 2 | 6
+ * Absolute    |SRE arg    |$4F| 3 | 6
+ * Absolute,X  |SRE arg,X  |$5F| 3 | 7
+ * Absolute,Y  |SRE arg,Y  |$5B| 3 | 7
+ * (Indirect,X)|SRE (arg,X)|$43| 2 | 8
+ * (Indirect),Y|SRE (arg),Y|$53| 2 | 8
  */
 export const sre = combine(lsr, eor);
 
 /**
- * SKB #i ($80 ii, $82 ii, $89 ii, $C2 ii, $E2 ii; 2 cycles)
+ * SXA (SHX) [XAS]
  *
- * These unofficial opcodes just read an immediate byte and skip it, like a
- * different address mode of NOP. One of these even works almost the same way
- * on 65C02, HuC6280, and 65C816: BIT #i ($89 ii), whose only difference from
- * the 6502 is that it affects the NVZ flags like the other BIT instructions.
- * Use this SKB if you want your code to be portable to Lynx, TG16, or Super
- * NES. Puzznic uses $89, and Beauty and the Beast uses $80. Also called DOP,
- * NOP (distinguished from the 1-byte encoding by the addressing mode).
+ * AND X register with the high byte of the target address of the argument + 1.
+ * Store the result in memory.
+ *
+ * M = X AND HIGH(arg) + 1
+ *
+ * Status flags: -
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export function skb() {}
+export function shx({cpu, mmu, add}) {
+  const src = mmu.r8(addr);
+  const val = cpu.x & ((src >> 4) + 1);
+  mmu.w8(val, addr);
+}
 
 /**
- * IGN a ($0C aa aa; 4 cycles)
- * IGN a,X ($1C aa aa, $3C aa aa, $5C aa aa, $7C aa aa, $DC aa aa,
- * $FC aa aa; 4 or 5 cycles)
- * IGN d ($04 dd, $44 dd, $64 dd; 3 cycles)
- * IGN d,X ($14 dd, $34 dd, $54 dd, $74 dd, $D4 dd, $F4 dd; 4 cycles)
+ * SYA (SHY) [SAY]
  *
- * Reads from memory at the specified address and ignores the value.
- * Affects no register nor flags. The absolute version can be used to increment
- * PPUADDR or reset the PPUSTATUS latch as an alternative to BIT. The zero page
- * version has no side effects.
+ * AND Y register with the high byte of the target address of the argument
+ * 1. Store the result in memory.
  *
- * IGN d,X reads from both d and (d+X)&255. IGN a,X additionally reads from
- * a+X-256 it crosses a page boundary (i.e. if ((a & 255) + X) > 255)
+ * M = Y AND HIGH(arg) + 1
  *
- * Sometimes called TOP (triple-byte no-op), SKW (skip word), DOP (double-byte
- * no-op), or SKB (skip byte).
+ * Status flags: -
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export function ign() {}
+export function shy({cpu, mmu, add}) {
+  const src = mmu.r8(addr);
+  const val = cpu.y & ((src >> 4) + 1);
+  mmu.w8(val, addr);
+}
+
+/**
+ * XAA (ANE) [XAA]
+ *
+ * Exact operation unknown. Read the referenced documents for more information
+ * and observations.
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Immediate   |XAA #arg   |$8B| 2 | 2
+ */
+export const xaa = unk;
+
+/**
+ * XAS (SHS) [TAS]
+ *
+ * AND X register with accumulator and store result in stack pointer, then
+ * AND stack pointer with the high byte of the target address of the
+ * argument + 1. Store result in memory.
+ *
+ * S = X AND A, M = S AND HIGH(arg) + 1
+ *
+ * Status flags: -
+ *
+ * Addressing  |Mnemonics  |Opc|Sz | n
+ * ------------|-----------|---|---|---
+ * Absolute,Y  |XAS arg,Y  |$9B| 3 | 5
+ */
+export function tas({cpu, mmu, addr}) {
+  cpu.sp = cpu.x & cpu.a;
+  const src = mmu.r8(addr);
+  const val = cpu.sp & ((src >> 4) + 1);
+  mmu.w8(val, addr);
+}
