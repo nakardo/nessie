@@ -1215,7 +1215,7 @@ export function anc(...args) {
  * Absolute    |AAX arg    |$8F| 3 | 4.
  */
 export function sax({cpu, mmu, addr}) {
-  mmu.w8(cpu.a & cpu.x);
+  mmu.w8(cpu.a & cpu.x, addr);
 }
 
 /**
@@ -1269,7 +1269,7 @@ export function alr(...args) {
  * (Indirect),Y|AXA arg    |$93| 2 | 6
  */
 export function ahx({cpu, mmu, addr}) {
-  mmu.w8(cpu.x & cpu.a & 7);
+  mmu.w8(cpu.x & cpu.a & 7, addr);
 }
 
 /**
