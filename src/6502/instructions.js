@@ -114,13 +114,21 @@ export function and({cpu, mmu, addr}) {
  * |  Absolute, X   |   ASL Oper,X          |    1E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function asl({cpu, mmu, addr}) {
-  let src = mmu.r8(addr);
-  cpu.carry(src & 0x80);
-  src = (src << 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+export function asl({opcode, cpu, mmu, addr}) {
+  const execute = (src) => {
+    cpu.carry(src & 0x80);
+    src = (src << 1) & 0xff;
+    cpu.sign(src);
+    cpu.zero(src);
+    return src;
+  };
+
+  if (opcode === 0x0a) {
+    cpu.a = execute(cpu.a);
+  } else {
+    const src = execute(mmu.r8(addr));
+    mmu.w8(src, addr);
+  }
 }
 
 /**
@@ -706,13 +714,21 @@ export function ldy(...args) {
  * |  Absolute,X    |   LSR Oper,X          |    5E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function lsr({cpu, mmu, addr}) {
-  let src = mmu.r8(addr);
-  cpu.carry(src & 1);
-  src >>= 1;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+export function lsr({opcode, cpu, mmu, addr}) {
+  const execute = (src) => {
+    cpu.carry(src & 1);
+    src >>= 1;
+    cpu.sign(src);
+    cpu.zero(src);
+    return src;
+  };
+
+  if (opcode === 0x4a) {
+    cpu.a = execute(cpu.a);
+  } else {
+    const src = execute(mmu.r8(addr));
+    mmu.w8(src, addr);
+  }
 }
 
 /**
@@ -840,14 +856,23 @@ export function plp({cpu}) {
  * |  Absolute,X    |   ROL Oper,X          |    3E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rol({cpu, mmu, addr}) {
-  let src = mmu.r8(addr) << 1;
-  if (cpu.carry()) src |= 1;
-  cpu.carry(src > 0xff);
-  src &= 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+export function rol({opcode, cpu, mmu, addr}) {
+  const execute = (src) => {
+    src <<= 1;
+    if (cpu.carry()) src |= 1;
+    cpu.carry(src > 0xff);
+    src &= 0xff;
+    cpu.sign(src);
+    cpu.zero(src);
+    return src;
+  };
+
+  if (opcode === 0x2a) {
+    cpu.a = execute(cpu.a);
+  } else {
+    const src = execute(mmu.r8(addr));
+    mmu.w8(src, addr);
+  }
 }
 
 /**
@@ -872,14 +897,22 @@ export function rol({cpu, mmu, addr}) {
  *   Note: ROR instruction is available on MCS650X microprocessors after
  *         June, 1976.
  */
-export function ror({cpu, mmu, addr}) {
-  let src = mmu.r8(addr);
-  if (cpu.carry()) src |= 0x100;
-  cpu.carry(src & 1);
-  src >>= 1;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+export function ror({opcode, cpu, mmu, addr}) {
+  const execute = (src) => {
+    if (cpu.carry()) src |= 0x100;
+    cpu.carry(src & 1);
+    src >>= 1;
+    cpu.sign(src);
+    cpu.zero(src);
+    return src;
+  };
+
+  if (opcode === 0x6a) {
+    cpu.a = execute(cpu.a);
+  } else {
+    const src = update(mmu.r8(addr));
+    mmu.w8(src, addr);
+  }
 }
 
 /**

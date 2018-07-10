@@ -161,8 +161,8 @@ export default class Cpu {
     let totalCycles = cycles;
     switch (mode) {
       case MODE.ACC:
-        break;
       case MODE.IMP:
+        break;
       case MODE.REL:
       case MODE.IMM:
         addr = next;
