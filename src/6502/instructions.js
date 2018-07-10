@@ -920,7 +920,7 @@ export function ror({opcode, cpu, mmu, addr}) {
   if (opcode === 0x6a) {
     cpu.a = execute(cpu.a);
   } else {
-    const src = update(mmu.r8(addr));
+    const src = execute(mmu.r8(addr));
     mmu.w8(src, addr);
   }
 }
