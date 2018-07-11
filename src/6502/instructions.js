@@ -31,7 +31,7 @@ const combine = (...fns) => function combine({...inst}) {
   fns.forEach(fn => fn(inst));
 }
 
-function unk({opcode}) {
+function unknown({opcode}) {
   // throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
 }
 
@@ -154,9 +154,7 @@ export function asl({opcode, cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bcc({cpu, ...inst}) {
-  branch({...inst, cpu}, !cpu.carry());
-}
+export const bcc = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.carry());
 
 /**
  * BCS                      BCS Branch on carry set                      BCS
@@ -172,9 +170,7 @@ export function bcc({cpu, ...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function bcs({cpu, ...inst}) {
-  branch({...inst, cpu}, cpu.carry());
-}
+export const bcs = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.carry());
 
 /**
  * BEQ                    BEQ Branch on result zero                      BEQ
@@ -189,9 +185,7 @@ export function bcs({cpu, ...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function beq({cpu, ...inst}) {
-  branch({...inst, cpu}, cpu.zero());
-}
+export const beq = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.zero());
 
 /**
  * BIT             BIT Test bits in memory with accumulator              BIT
@@ -230,9 +224,7 @@ export function bit({cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 1 if branch occurs to different page.
  */
-export function bmi({cpu, ...inst}) {
-  branch({...inst, cpu}, cpu.sign());
-}
+export const bmi = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.sign());
 
 /**
  * BNE                   BNE Branch on result not zero                   BNE
@@ -248,9 +240,7 @@ export function bmi({cpu, ...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bne({cpu, ...inst}) {
-  branch({...inst, cpu}, !cpu.zero());
-}
+export const bne = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.zero());
 
 /**
  * BPL                     BPL Branch on result plus                     BPL
@@ -266,9 +256,7 @@ export function bne({cpu, ...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bpl({cpu, ...inst}) {
-  branch({...inst, cpu}, !cpu.sign());
-}
+export const bpl = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.sign());
 
 /**
  * BRK                          BRK Force Break                          BRK
@@ -304,9 +292,7 @@ export function brk({cpu}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvc({cpu, ...inst}) {
-  branch({...inst, cpu}, !cpu.overflow());
-}
+export const bvc = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.overflow());
 
 /**
  * BVS                    BVS Branch on overflow set                     BVS
@@ -322,9 +308,7 @@ export function bvc({cpu, ...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvs({cpu, ...inst}) {
-  branch({...inst, cpu}, cpu.overflow());
-}
+export const bvs = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.overflow());
 
 /**
  * CLC                       CLC Clear carry flag                        CLC
@@ -410,9 +394,7 @@ export function clv({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function cmp({cpu, ...inst}) {
-  compare({...inst, cpu}, cpu.a);
-}
+export const cmp = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.a);
 
 /**
  * CPX                  CPX Compare Memory and Index X                   CPX
@@ -427,9 +409,7 @@ export function cmp({cpu, ...inst}) {
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpx({cpu, ...inst}) {
-  compare({...inst, cpu}, cpu.x);
-}
+export const cpx = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.x);
 
 /**
  * CPY                  CPY Compare memory and index Y                   CPY
@@ -444,9 +424,7 @@ export function cpx({cpu, ...inst}) {
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpy({cpu, ...inst}) {
-  compare({...inst, cpu}, cpu.y);
-}
+export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
 
 /**
  * DEC                   DEC Decrement memory by one                     DEC
@@ -1332,7 +1310,7 @@ export const isc = combine(inc, sbc);
  * Implied     |KIL        |$D2| 1 | -
  * Implied     |KIL        |$F2| 1 | -
  */
-export const stp = unk;
+export const stp = unknown;
 
 /**
  * LAR (LAE) [LAS]
@@ -1491,7 +1469,7 @@ export function shy({cpu, mmu, addr}) {
  * ------------|-----------|---|---|---
  * Immediate   |XAA #arg   |$8B| 2 | 2
  */
-export const xaa = unk;
+export const xaa = unknown;
 
 /**
  * XAS (SHS) [TAS]
