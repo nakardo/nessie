@@ -154,7 +154,7 @@ export default class Cpu {
 
   runCycle() {
     const inst = this.decode();
-    const {opcode, mode, bytes, cycles, branchCycles, execute} = inst;
+    const {mode, bytes, cycles, branchCycles, execute} = inst;
     const next = this.pc + 1;
 
     let addr;
