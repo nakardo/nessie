@@ -54,7 +54,7 @@ export default class Cpu {
 
   sign(val) {
     if (val !== undefined) {
-      if (val & FLAG.SIGN) this.stat |= FLAG.SIGN;
+      if ((val & 0x80) > 0) this.stat |= FLAG.SIGN;
       else this.stat &= ~FLAG.SIGN;
     }
     return !!(this.stat & FLAG.SIGN);
@@ -125,7 +125,7 @@ export default class Cpu {
       this.handleInterrupts();
       this.runCycle();
     }
-    this.nmi = true;
+    // this.nmi = true;
   }
 
   handleInterrupts() {
