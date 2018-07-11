@@ -154,9 +154,8 @@ export function asl({opcode, cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bcc({...inst}) {
-  const {cpu} = inst;
-  branch(inst, !cpu.carry());
+export function bcc({cpu, ...inst}) {
+  branch({cpu, ...inst}, !cpu.carry());
 }
 
 /**
@@ -173,9 +172,8 @@ export function bcc({...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function bcs({...inst}) {
-  const {cpu} = inst;
-  branch(inst, cpu.carry());
+export function bcs({cpu, ...inst}) {
+  branch({cpu, ...inst}, cpu.carry());
 }
 
 /**
@@ -191,9 +189,8 @@ export function bcs({...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function beq({...inst}) {
-  const {cpu} = inst;
-  branch(inst, cpu.zero());
+export function beq({cpu, ...inst}) {
+  branch({cpu, ...inst}, cpu.zero());
 }
 
 /**
@@ -233,9 +230,8 @@ export function bit({cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 1 if branch occurs to different page.
  */
-export function bmi({...inst}) {
-  const {cpu} = inst;
-  branch(inst, cpu.sign());
+export function bmi({cpu, ...inst}) {
+  branch({cpu, ...inst}, cpu.sign());
 }
 
 /**
@@ -252,9 +248,8 @@ export function bmi({...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bne({...inst}) {
-  const {cpu} = inst;
-  branch(inst, !cpu.zero());
+export function bne({cpu, ...inst}) {
+  branch({cpu, ...inst}, !cpu.zero());
 }
 
 /**
@@ -271,9 +266,8 @@ export function bne({...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bpl({...inst}) {
-  const {cpu} = inst;
-  branch(inst, !cpu.sign());
+export function bpl({cpu, ...inst}) {
+  branch({cpu, ...inst}, !cpu.sign());
 }
 
 /**
@@ -310,9 +304,8 @@ export function brk({cpu}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvc({...inst}) {
-  const {cpu} = inst;
-  branch(inst, !cpu.overflow());
+export function bvc({cpu, ...inst}) {
+  branch({cpu, ...inst}, !cpu.overflow());
 }
 
 /**
@@ -329,9 +322,8 @@ export function bvc({...inst}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvs({...inst}) {
-  const {cpu} = inst;
-  branch(inst, cpu.overflow());
+export function bvs({cpu, ...inst}) {
+  branch({cpu, ...inst}, cpu.overflow());
 }
 
 /**
@@ -418,9 +410,8 @@ export function clv({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function cmp({...inst}) {
-  const {cpu} = inst;
-  compare(inst, cpu.a);
+export function cmp({cpu, ...inst}) {
+  compare({cpu, ...inst}, cpu.a);
 }
 
 /**
@@ -436,9 +427,8 @@ export function cmp({...inst}) {
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpx({...inst}) {
-  const {cpu} = inst;
-  compare(inst, cpu.x);
+export function cpx({cpu, ...inst}) {
+  compare({cpu, ...inst}, cpu.x);
 }
 
 /**
@@ -454,9 +444,8 @@ export function cpx({...inst}) {
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpy({...inst}) {
-  const {cpu} = inst;
-  compare(inst, cpu.y);
+export function cpy({cpu, ...inst}) {
+  compare({cpu, ...inst}, cpu.y);
 }
 
 /**
@@ -659,9 +648,8 @@ export function jsr({cpu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function lda({...inst}) {
-  const {cpu} = inst;
-  cpu.a = load(inst);
+export function lda({cpu, ...inst}) {
+  cpu.a = load({cpu, ...inst});
 };
 
 /**
@@ -681,9 +669,8 @@ export function lda({...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function ldx({...inst}) {
-  const {cpu} = inst;
-  cpu.x = load(inst);
+export function ldx({cpu, ...inst}) {
+  cpu.x = load({cpu, ...inst});
 }
 
 /**
@@ -702,9 +689,8 @@ export function ldx({...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function ldy({...inst}) {
-  const {cpu} = inst;
-  cpu.y = load(inst);
+export function ldy({cpu, ...inst}) {
+  cpu.y = load({cpu, ...inst});
 }
 
 /**
@@ -1195,9 +1181,8 @@ export const tya = transfer({from: 'y', to: 'a'});
  * Immediate   |AAC #arg   |$0B| 2 | 2
  * Immediate   |AAC #arg   |$2B| 2 | 2
  */
-export function anc({...inst}) {
-  const {cpu} = inst;
-  and(inst);
+export function anc({cpu, ...inst}) {
+  and({cpu, ...inst});
   cpu.carry(cpu.sign());
 }
 
@@ -1235,10 +1220,9 @@ export function sax({cpu, mmu, addr}) {
  *  ------------|-----------|---|---|---
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
-export function arr({...inst}) {
-  const {cpu} = inst;
-  and(inst);
-  ror({...inst, opcode: 0x6a});
+export function arr({cpu, ...inst}) {
+  and({cpu, ...inst});
+  ror({cpu, ...inst, opcode: 0x6a});
   cpu.carry(cpu.a & 0x40 > 0);
   cpu.overflow(((cpu.a & 0x40) ^ (cpu.a & 0x20)) > 0);
 }
