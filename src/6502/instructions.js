@@ -155,7 +155,7 @@ export function asl({opcode, cpu, mmu, addr}) {
  * * Add 2 if branch occurs to different page.
  */
 export function bcc({cpu, ...inst}) {
-  branch({cpu, ...inst}, !cpu.carry());
+  branch({...inst, cpu}, !cpu.carry());
 }
 
 /**
@@ -173,7 +173,7 @@ export function bcc({cpu, ...inst}) {
  * * Add 2 if branch occurs to next page.
  */
 export function bcs({cpu, ...inst}) {
-  branch({cpu, ...inst}, cpu.carry());
+  branch({...inst, cpu}, cpu.carry());
 }
 
 /**
@@ -190,7 +190,7 @@ export function bcs({cpu, ...inst}) {
  * * Add 2 if branch occurs to next page.
  */
 export function beq({cpu, ...inst}) {
-  branch({cpu, ...inst}, cpu.zero());
+  branch({...inst, cpu}, cpu.zero());
 }
 
 /**
@@ -231,7 +231,7 @@ export function bit({cpu, mmu, addr}) {
  * * Add 1 if branch occurs to different page.
  */
 export function bmi({cpu, ...inst}) {
-  branch({cpu, ...inst}, cpu.sign());
+  branch({...inst, cpu}, cpu.sign());
 }
 
 /**
@@ -249,7 +249,7 @@ export function bmi({cpu, ...inst}) {
  * * Add 2 if branch occurs to different page.
  */
 export function bne({cpu, ...inst}) {
-  branch({cpu, ...inst}, !cpu.zero());
+  branch({...inst, cpu}, !cpu.zero());
 }
 
 /**
@@ -267,7 +267,7 @@ export function bne({cpu, ...inst}) {
  * * Add 2 if branch occurs to different page.
  */
 export function bpl({cpu, ...inst}) {
-  branch({cpu, ...inst}, !cpu.sign());
+  branch({...inst, cpu}, !cpu.sign());
 }
 
 /**
@@ -305,7 +305,7 @@ export function brk({cpu}) {
  * * Add 2 if branch occurs to different page.
  */
 export function bvc({cpu, ...inst}) {
-  branch({cpu, ...inst}, !cpu.overflow());
+  branch({...inst, cpu}, !cpu.overflow());
 }
 
 /**
@@ -323,7 +323,7 @@ export function bvc({cpu, ...inst}) {
  * * Add 2 if branch occurs to different page.
  */
 export function bvs({cpu, ...inst}) {
-  branch({cpu, ...inst}, cpu.overflow());
+  branch({...inst, cpu}, cpu.overflow());
 }
 
 /**
@@ -411,7 +411,7 @@ export function clv({cpu}) {
  * * Add 1 if page boundary is crossed.
  */
 export function cmp({cpu, ...inst}) {
-  compare({cpu, ...inst}, cpu.a);
+  compare({...inst, cpu}, cpu.a);
 }
 
 /**
@@ -428,7 +428,7 @@ export function cmp({cpu, ...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function cpx({cpu, ...inst}) {
-  compare({cpu, ...inst}, cpu.x);
+  compare({...inst, cpu}, cpu.x);
 }
 
 /**
@@ -445,7 +445,7 @@ export function cpx({cpu, ...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function cpy({cpu, ...inst}) {
-  compare({cpu, ...inst}, cpu.y);
+  compare({...inst, cpu}, cpu.y);
 }
 
 /**
@@ -649,7 +649,7 @@ export function jsr({cpu, addr}) {
  * * Add 1 if page boundary is crossed.
  */
 export function lda({cpu, ...inst}) {
-  cpu.a = load({cpu, ...inst});
+  cpu.a = load({...inst, cpu});
 };
 
 /**
@@ -670,7 +670,7 @@ export function lda({cpu, ...inst}) {
  * * Add 1 when page boundary is crossed.
  */
 export function ldx({cpu, ...inst}) {
-  cpu.x = load({cpu, ...inst});
+  cpu.x = load({...inst, cpu});
 }
 
 /**
@@ -690,7 +690,7 @@ export function ldx({cpu, ...inst}) {
  * * Add 1 when page boundary is crossed.
  */
 export function ldy({cpu, ...inst}) {
-  cpu.y = load({cpu, ...inst});
+  cpu.y = load({...inst, cpu});
 }
 
 /**
@@ -1182,7 +1182,7 @@ export const tya = transfer({from: 'y', to: 'a'});
  * Immediate   |AAC #arg   |$2B| 2 | 2
  */
 export function anc({cpu, ...inst}) {
-  and({cpu, ...inst});
+  and({...inst, cpu});
   cpu.carry(cpu.sign());
 }
 
@@ -1221,8 +1221,8 @@ export function sax({cpu, mmu, addr}) {
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
 export function arr({cpu, ...inst}) {
-  and({cpu, ...inst});
-  ror({cpu, ...inst, opcode: 0x6a});
+  and({...inst, cpu});
+  ror({...inst, cpu, opcode: 0x6a});
   cpu.carry(cpu.a & 0x40 > 0);
   cpu.overflow(((cpu.a & 0x40) ^ (cpu.a & 0x20)) > 0);
 }
