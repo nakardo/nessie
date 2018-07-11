@@ -20,6 +20,7 @@ export default class Cpu {
   sp = 0;
   t = 0;
   irq = false;
+  nmi = false;
   loop = null;
 
   constructor(mmu) {
@@ -124,19 +125,28 @@ export default class Cpu {
       this.handleInterrupts();
       this.runCycle();
     }
-    // this.pc = this.mmu.r16(INT.NMI_ADDR);
-    // interrupt('pc: %s', this.pc.to(16));
+    this.nmi = true;
   }
 
   handleInterrupts() {
-    if (!this.interrupt()) return;
+    if (!this.nmi || !this.interrupt()) return;
 
-    if (this.irq) this.irq = false;
-    else if (this.break()) this.break(false);
-    else return;
+    let vector;
+    if (this.nmi) {
+      vector = INT.NMI_ADDR;
+      this.nmi = false;
+    } else if (this.irq) {
+      vector = INT.IRQ_BRK_ADDR;
+      this.irq = false;
+    } else if (this.break()) {
+      vector = INT.IRQ_BRK_ADDR;
+      this.break(false);
+    }
 
+    this.push16(this.pc);
+    this.push8(this.stat);
     this.interrupt(false);
-    this.pc = this.mmu.r16(INT.IRQ_BRK_ADDR);
+    this.pc = this.mmu.r16(vector);
     this.t += 7;
 
     interrupt('pc: %s', this.pc.to(16));
