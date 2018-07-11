@@ -8,7 +8,7 @@ function branch({branchCycles, cpu, mmu, addr}, cond) {
 
 function compare({cpu, mmu, addr}, val) {
   const src = val - mmu.r8(addr);
-  cpu.carry(src < 0x100);
+  cpu.carry(src < 0);
   cpu.sign(src);
   cpu.zero(src & 0xff);
 }
@@ -272,9 +272,8 @@ export const bpl = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.sign());
  * 1. A BRK command cannot be masked by setting I.
  */
 export function brk({cpu}) {
-  cpu.push16(cpu.pc + 1);
+  cpu.pc++;
   cpu.break(true);
-  cpu.push8(cpu.stat);
   cpu.interrupt(true);
 }
 
@@ -956,7 +955,7 @@ export function sbc({cpu, mmu, addr}) {
       temp -= 0x60;
     }
   }
-  cpu.carry(temp < 0x100);
+  cpu.carry(temp < 0);
   cpu.a = (temp & 0xff);
 }
 
