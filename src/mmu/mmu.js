@@ -6,7 +6,7 @@ import Ppu from '../ppu/ppu';
 const debug = Debug('nes:mmu');
 
 function createMemory({data, pages, size}) {
-  return new Array(pages).fill(null).map((v, i) => {
+  return new Array(pages).fill(null).map((_, i) => {
     const offset = i * size;
     return data.slice(offset, offset + size);
   });

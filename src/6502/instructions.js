@@ -28,7 +28,7 @@ const transfer = ({from, to}) => function transfer({cpu}) {
 };
 
 const combine = (...fns) => function combine({...inst}) {
-  fns.forEach((fn) => fn(inst));
+  fns.forEach(fn => fn(inst));
 }
 
 function unk({opcode}) {
@@ -125,7 +125,7 @@ export function and({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function asl({opcode, cpu, mmu, addr}) {
-  const execute = (src) => {
+  const execute = src => {
     cpu.carry(src & 0x80);
     src = (src << 1) & 0xff;
     cpu.sign(src);
@@ -725,7 +725,7 @@ export function ldy({...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function lsr({opcode, cpu, mmu, addr}) {
-  const execute = (src) => {
+  const execute = src => {
     cpu.carry(src & 1);
     src >>= 1;
     cpu.sign(src);
@@ -867,7 +867,7 @@ export function plp({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rol({opcode, cpu, mmu, addr}) {
-  const execute = (src) => {
+  const execute = src => {
     src <<= 1;
     if (cpu.carry()) src |= 1;
     cpu.carry(src > 0xff);
@@ -908,7 +908,7 @@ export function rol({opcode, cpu, mmu, addr}) {
  *         June, 1976.
  */
 export function ror({opcode, cpu, mmu, addr}) {
-  const execute = (src) => {
+  const execute = src => {
     if (cpu.carry()) src |= 0x100;
     cpu.carry(src & 1);
     src >>= 1;
