@@ -27,8 +27,8 @@ const transfer = ({from, to}) => function transfer({cpu}) {
   cpu[to] = src;
 };
 
-const combine = (...fns) => function combine(...args) {
-  [...fns].forEach((fn) => fn(...args));
+const combine = (...fns) => function combine({...inst}) {
+  fns.forEach((fn) => fn(inst));
 }
 
 function unk({opcode}) {
@@ -154,9 +154,9 @@ export function asl({opcode, cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bcc(...args) {
-  const {cpu} = args[0];
-  branch(...args, !cpu.carry());
+export function bcc({...inst}) {
+  const {cpu} = inst;
+  branch(inst, !cpu.carry());
 }
 
 /**
@@ -173,9 +173,9 @@ export function bcc(...args) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function bcs(...args) {
-  const {cpu} = args[0];
-  branch(...args, cpu.carry());
+export function bcs({...inst}) {
+  const {cpu} = inst;
+  branch(inst, cpu.carry());
 }
 
 /**
@@ -191,9 +191,9 @@ export function bcs(...args) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to next page.
  */
-export function beq(...args) {
-  const {cpu} = args[0];
-  branch(...args, cpu.zero());
+export function beq({...inst}) {
+  const {cpu} = inst;
+  branch(inst, cpu.zero());
 }
 
 /**
@@ -233,9 +233,9 @@ export function bit({cpu, mmu, addr}) {
  * * Add 1 if branch occurs to same page.
  * * Add 1 if branch occurs to different page.
  */
-export function bmi(...args) {
-  const {cpu} = args[0];
-  branch(...args, cpu.sign());
+export function bmi({...inst}) {
+  const {cpu} = inst;
+  branch(inst, cpu.sign());
 }
 
 /**
@@ -252,9 +252,9 @@ export function bmi(...args) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bne(...args) {
-  const {cpu} = args[0];
-  branch(...args, !cpu.zero());
+export function bne({...inst}) {
+  const {cpu} = inst;
+  branch(inst, !cpu.zero());
 }
 
 /**
@@ -271,9 +271,9 @@ export function bne(...args) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bpl(...args) {
-  const {cpu} = args[0];
-  branch(...args, !cpu.sign());
+export function bpl({...inst}) {
+  const {cpu} = inst;
+  branch(inst, !cpu.sign());
 }
 
 /**
@@ -310,9 +310,9 @@ export function brk({cpu}) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvc(...args) {
-  const {cpu} = args[0];
-  branch(...args, !cpu.overflow());
+export function bvc({...inst}) {
+  const {cpu} = inst;
+  branch(inst, !cpu.overflow());
 }
 
 /**
@@ -329,9 +329,9 @@ export function bvc(...args) {
  * * Add 1 if branch occurs to same page.
  * * Add 2 if branch occurs to different page.
  */
-export function bvs(...args) {
-  const {cpu} = args[0];
-  branch(...args, cpu.overflow());
+export function bvs({...inst}) {
+  const {cpu} = inst;
+  branch(inst, cpu.overflow());
 }
 
 /**
@@ -418,9 +418,9 @@ export function clv({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function cmp(...args) {
-  const {cpu} = args[0];
-  compare(...args, cpu.a);
+export function cmp({...inst}) {
+  const {cpu} = inst;
+  compare(inst, cpu.a);
 }
 
 /**
@@ -436,9 +436,9 @@ export function cmp(...args) {
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpx(...args) {
-  const {cpu} = args[0];
-  compare(...args, cpu.x);
+export function cpx({...inst}) {
+  const {cpu} = inst;
+  compare(inst, cpu.x);
 }
 
 /**
@@ -454,9 +454,9 @@ export function cpx(...args) {
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cpy(...args) {
-  const {cpu} = args[0];
-  compare(...args, cpu.y);
+export function cpy({...inst}) {
+  const {cpu} = inst;
+  compare(inst, cpu.y);
 }
 
 /**
@@ -659,9 +659,9 @@ export function jsr({cpu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function lda(...args) {
-  const {cpu} = args[0];
-  cpu.a = load(...args);
+export function lda({...inst}) {
+  const {cpu} = inst;
+  cpu.a = load(inst);
 };
 
 /**
@@ -681,9 +681,9 @@ export function lda(...args) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function ldx(...args) {
-  const {cpu} = args[0];
-  cpu.x = load(...args);
+export function ldx({...inst}) {
+  const {cpu} = inst;
+  cpu.x = load(inst);
 }
 
 /**
@@ -702,9 +702,9 @@ export function ldx(...args) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function ldy(...args) {
-  const {cpu} = args[0];
-  cpu.y = load(...args);
+export function ldy({...inst}) {
+  const {cpu} = inst;
+  cpu.y = load(inst);
 }
 
 /**
@@ -1195,9 +1195,9 @@ export const tya = transfer({from: 'y', to: 'a'});
  * Immediate   |AAC #arg   |$0B| 2 | 2
  * Immediate   |AAC #arg   |$2B| 2 | 2
  */
-export function anc(...args) {
-  const {cpu} = args[0];
-  and(...args);
+export function anc({...inst}) {
+  const {cpu} = inst;
+  and(inst);
   cpu.carry(cpu.sign());
 }
 
@@ -1235,10 +1235,10 @@ export function sax({cpu, mmu, addr}) {
  *  ------------|-----------|---|---|---
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
-export function arr(...args) {
-  const {cpu} = args[0];
-  and(...args);
-  ror({...args, opcode: 0x6a});
+export function arr({...inst}) {
+  const {cpu} = inst;
+  and(inst);
+  ror({...inst, opcode: 0x6a});
   cpu.carry(cpu.a & 0x40 > 0);
   cpu.overflow(((cpu.a & 0x40) ^ (cpu.a & 0x20)) > 0);
 }
@@ -1253,9 +1253,9 @@ export function arr(...args) {
  * ------------|-----------|---|---|---
  * Immediate   |ASR #arg   |$4B| 2 | 2
  */
-export function alr(...args) {
-  and(...args);
-  lsr({...args, opcode: 0x4a});
+export function alr({...inst}) {
+  and(inst);
+  lsr({...inst, opcode: 0x4a});
 }
 
 /**
