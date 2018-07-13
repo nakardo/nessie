@@ -4,10 +4,12 @@ import {
   cli, clv, cmp, cpx, cpy, dec, dex, dey, eor, inc, inx, iny, jmp, jsr, lda,
   ldx, ldy, lsr, nop, ora, pha, php, pla, plp, rol, ror, rti, rts, sbc, sec,
   sed, sei, sta, stx, sty, tax, tay, tsx, txa, txs, tya,
-  // unofficial
-  anc, sax, arr, alr, ahx, axs, dcp, isc, stp, las, lax, rla, rra, slo, sre,
-  shx, shy, xaa, tas
 } from './instructions';
+
+let anc, sax, arr, alr, ahx, axs, dcp, isc, stp, las, lax, rla, rra, slo, sre, shx, shy, xaa, tas;
+anc = sax = arr = alr = ahx = axs = dcp = isc = stp = las = lax = rla = rra = slo = sre = shx = shy = xaa = tas = ({opcode}) => {
+  throw new Error(opcode);
+};
 
 const execute = [
   brk, ora, stp, slo, nop, ora, asl, slo, php, ora, asl, anc, nop, ora, asl, slo,

@@ -103,9 +103,9 @@ export default class Mmu {
         }
       case 0x6: case 0x7:
         // console.log(addr.to(16), val.to(16));
-        // if (addr >= 0x6004) {
+        if (addr >= 0x6004) {
           process.stdout.write(String.fromCharCode(val));
-        // }
+        }
         this.sram[addr & 0x1fff] = val;
         return;
       case 0xe:

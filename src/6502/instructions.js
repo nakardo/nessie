@@ -1,3 +1,5 @@
+import {IRQ_BRK_ADDR} from './interrupts';
+
 function branch({branchCycles, cpu, mmu, addr}, cond) {
   if (cond) {
     const next = cpu.pc + mmu.r8(addr).signed();
@@ -271,10 +273,11 @@ export const bpl = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.sign());
  * +----------------+-----------------------+---------+---------+----------+
  * 1. A BRK command cannot be masked by setting I.
  */
-export function brk({cpu}) {
-  cpu.pc++;
-  cpu.break(true);
+export function brk({cpu, mmu}) {
+  cpu.push16(cpu.pc + 1);
+  cpu.push8(cpu.stat | 0b110000); // Set bits 5 and 4.
   cpu.interrupt(true);
+  cpu.pc = mmu.r16(IRQ_BRK_ADDR);
 }
 
 /**
@@ -773,7 +776,7 @@ export function pha({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function php({cpu}) {
-  cpu.push8(cpu.stat);
+  cpu.push8(cpu.stat | 0b110000); // Set bits 5 and 4.
 }
 
 /**
@@ -807,7 +810,7 @@ export function pla({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function plp({cpu}) {
-  cpu.stat = cpu.pull8();
+  cpu.stat = cpu.pull8() & 0b11001111; // Ignore bits 5 and 4.
 }
 
 /**
@@ -900,7 +903,7 @@ export function ror({opcode, cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rti({cpu}) {
-  cpu.stat = cpu.pull8();
+  cpu.stat = cpu.pull8() & 0b11001111; // Ignore bits 5 and 4.
   cpu.pc = cpu.pull16();
 }
 

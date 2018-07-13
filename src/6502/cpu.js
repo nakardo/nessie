@@ -19,6 +19,9 @@ export default class Cpu {
   pc = 0;
   sp = 0;
   t = 0;
+  // TODO(nakardo): update flag behavior with this:
+  // - https://wiki.nesdev.com/w/index.php/CPU_status_flag_behavior
+  // - also revisit instructions listed.
   irq = false;
   nmi = false;
   loop = null;
@@ -66,14 +69,6 @@ export default class Cpu {
       else this.stat &= ~FLAG.OVERFLOW;
     }
     return !!(this.stat & FLAG.OVERFLOW);
-  }
-
-  break(cond) {
-    if (cond !== undefined) {
-      if (cond) this.stat |= FLAG.BREAK;
-      else this.stat &= ~FLAG.BREAK;
-    }
-    return !!(this.stat & FLAG.BREAK);
   }
 
   decimal(cond) {
