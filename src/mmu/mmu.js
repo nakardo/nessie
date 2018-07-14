@@ -103,6 +103,10 @@ export default class Mmu {
         }
       case 0x6: case 0x7:
         // console.log(addr.to(16), val.to(16));
+        if (addr == 0x6000) {
+          console.log(addr.to(16), val.to(16));
+          if (val != 0x80 && val > 0) process.exit(1);
+        }
         if (addr >= 0x6004) {
           process.stdout.write(String.fromCharCode(val));
         }
