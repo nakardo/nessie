@@ -548,7 +548,7 @@ export function inc({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function inx({cpu}) {
-  const src = ++cpu.x & 0xff;
+  const src = (cpu.x + 1) & 0xff;
   cpu.sign(src);
   cpu.zero(src);
   cpu.x = src;
@@ -568,7 +568,7 @@ export function inx({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function iny({cpu}) {
-  const src = ++cpu.y & 0xff;
+  const src = (cpu.y + 1) & 0xff;
   cpu.sign(src);
   cpu.zero(src);
   cpu.y = src;
