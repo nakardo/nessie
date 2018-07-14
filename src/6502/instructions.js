@@ -19,14 +19,14 @@ function decrement({cpu}, val) {
   const src = (val - 1) & 0xff;
   cpu.sign(src);
   cpu.zero(src);
-  return val;
+  return src;
 }
 
 function increment({cpu}, val) {
   const src = (val + 1) & 0xff;
   cpu.sign(src);
   cpu.zero(src);
-  return val;
+  return src;
 }
 
 function load({cpu, mmu, addr}) {
