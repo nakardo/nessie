@@ -15,6 +15,20 @@ function compare({cpu, mmu, addr}, val) {
   cpu.zero(src & 0xff);
 }
 
+function decrement({cpu}, val) {
+  const src = (val - 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  return val;
+}
+
+function increment({cpu}, val) {
+  const src = (val + 1) & 0xff;
+  cpu.sign(src);
+  cpu.zero(src);
+  return val;
+}
+
 function load({cpu, mmu, addr}) {
   const src = mmu.r8(addr);
   cpu.sign(src);
@@ -34,7 +48,7 @@ const combine = (...fns) => function combine({...inst}) {
 }
 
 function unknown({opcode}) {
-  // throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
+  throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
 }
 
 // Official opcodes
@@ -444,10 +458,8 @@ export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function dec({cpu, mmu, addr}) {
-  const src = (mmu.r8(addr) - 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+  const val = decrement({cpu}, mmu.r8(addr));
+  mmu.w8(val, addr);
 }
 
 /**
@@ -463,10 +475,7 @@ export function dec({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function dex({cpu}) {
-  const src = (cpu.x - 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.x = src;
+  cpu.x = decrement({cpu}, cpu.x);
 }
 
 /**
@@ -482,10 +491,7 @@ export function dex({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function dey({cpu}) {
-  const src = (cpu.y - 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.y = src;
+  cpu.y = decrement({cpu}, cpu.y);
 }
 
 /**
@@ -530,10 +536,8 @@ export function eor({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function inc({cpu, mmu, addr}) {
-  const src = (mmu.r8(addr) + 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  mmu.w8(src, addr);
+  const val = increment({cpu}, mmu.r8(addr));
+  mmu.w8(val, addr);
 }
 
 /**
@@ -548,10 +552,7 @@ export function inc({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function inx({cpu}) {
-  const src = (cpu.x + 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.x = src;
+  cpu.x = increment({cpu}, cpu.x);
 }
 
 
@@ -568,10 +569,7 @@ export function inx({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function iny({cpu}) {
-  const src = (cpu.y + 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.y = src;
+  cpu.y = increment({cpu}, cpu.y);
 }
 
 /**
@@ -945,7 +943,6 @@ export function rts({cpu}) {
 export function sbc({cpu, mmu, addr}) {
   const carry = cpu.carry() ? 0 : 1;
   const src = mmu.r8(addr);
-
   let temp = cpu.a - src - carry;
   cpu.sign(temp);
   cpu.zero(temp & 0xff);
@@ -1132,7 +1129,9 @@ export const txa = transfer({from: 'x', to: 'a'});
  * |  Implied       |   TXS                 |    9A   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const txs = transfer({from: 'x', to: 'sp'});
+export function txs({cpu}) {
+  cpu.sp = cpu.x;
+}
 
 /**
  * TYA                TYA Transfer index Y to accumulator                TYA
@@ -1203,8 +1202,8 @@ export function sax({cpu, mmu, addr}) {
 export function arr({cpu, ...inst}) {
   and({...inst, cpu});
   ror({...inst, cpu, opcode: 0x6a});
-  cpu.carry(cpu.a & 0x40 > 0);
-  cpu.overflow(((cpu.a & 0x40) ^ (cpu.a & 0x20)) > 0);
+  cpu.carry(cpu.a & 0x40);
+  cpu.overflow((cpu.a & 0x40) ^ (cpu.a & 0x20));
 }
 
 /**
