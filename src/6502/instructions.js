@@ -10,7 +10,7 @@ function branch({branchCycles, cpu, mmu, addr}, cond) {
 
 function compare({cpu, mmu, addr}, val) {
   const src = val - mmu.r8(addr);
-  cpu.carry(src < 0);
+  cpu.carry(src >= 0);
   cpu.sign(src);
   cpu.zero(src & 0xff);
 }
