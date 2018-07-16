@@ -1246,12 +1246,19 @@ export function ahx({cpu, mmu, addr}) {
  * ------------|-----------|---|---|---
  * Immediate   |AXS #arg   |$CB| 2 | 2
  */
+// export function axs({cpu, mmu, addr}) {
+//   const src = (cpu.a & cpu.x) - mmu.r8(addr);
+//   cpu.sign(src);
+//   cpu.zero(src);
+//   cpu.carry(src < 0x100);
+//   cpu.x = src & 0xff;
+// }
 export function axs({cpu, mmu, addr}) {
-  const src = (cpu.a & cpu.x) - mmu.r8(addr);
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.carry(src < 0x100);
-  cpu.x = src & 0xff;
+  const val = (cpu.x & cpu.a) - mmu.r8(addr);
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.carry(val >= 0);
+  cpu.x = val & 0xff;
 }
 
 /**
