@@ -9,38 +9,40 @@ function branch({branchCycles, cpu, mmu, addr}, cond) {
 }
 
 function compare({cpu, mmu, addr}, val) {
-  const src = val - mmu.r8(addr);
-  cpu.carry(src >= 0);
-  cpu.sign(src);
-  cpu.zero(src & 0xff);
+  val -= mmu.r8(addr);
+  cpu.carry(val >= 0);
+  cpu.sign(val);
+  cpu.zero(val & 0xff);
 }
 
 function decrement({cpu}, val) {
-  const src = (val - 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  return src;
+  val -= 1;
+  val &= 0xff;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
 }
 
 function increment({cpu}, val) {
-  const src = (val + 1) & 0xff;
-  cpu.sign(src);
-  cpu.zero(src);
-  return src;
+  val += 1;
+  val &= 0xff;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
 }
 
 function load({cpu, mmu, addr}) {
-  const src = mmu.r8(addr);
-  cpu.sign(src);
-  cpu.zero(src);
-  return src;
+  const val = mmu.r8(addr);
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
 }
 
 const transfer = ({from, to}) => function transfer({cpu}) {
-  const src = cpu[from];
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu[to] = src;
+  const val = cpu[from];
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu[to] = val;
 };
 
 const combine = (...fns) => function combine({...inst}) {
@@ -75,22 +77,22 @@ function unknown({opcode}) {
  */
 export function adc({cpu, mmu, addr}) {
   const carry = cpu.carry() ? 1 : 0;
-  const src = mmu.r8(addr);
-  let temp = src + cpu.a + carry;
+  const val = mmu.r8(addr);
+  let temp = val + cpu.a + carry;
   cpu.zero(temp & 0xff);
   if (cpu.decimal()) {
-    if (((cpu.a & 0xf) + (src & 0xf) + carry) > 9) {
+    if (((cpu.a & 0xf) + (val & 0xf) + carry) > 9) {
       temp += 6;
     }
     cpu.sign(temp);
-    cpu.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
+    cpu.overflow(!((cpu.a ^ val) & 0x80) && ((cpu.a ^ temp) & 0x80));
     if (temp > 0x99) {
       temp += 96;
     }
     cpu.carry(temp > 0x99);
   } else {
     cpu.sign(temp);
-    cpu.overflow(!((cpu.a ^ src) & 0x80) && ((cpu.a ^ temp) & 0x80));
+    cpu.overflow(!((cpu.a ^ val) & 0x80) && ((cpu.a ^ temp) & 0x80));
     cpu.carry(temp > 0xff);
   }
   cpu.a = temp & 0xff;
@@ -117,10 +119,10 @@ export function adc({cpu, mmu, addr}) {
  * * Add 1 if page boundary is crossed.
  */
 export function and({cpu, mmu, addr}) {
-  const src = mmu.r8(addr) & cpu.a;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.a = src;
+  const val = mmu.r8(addr) & cpu.a;
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.a = val;
 }
 
 /**
@@ -141,19 +143,19 @@ export function and({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function asl({opcode, cpu, mmu, addr}) {
-  const execute = src => {
-    cpu.carry(src & 0x80);
-    src = (src << 1) & 0xff;
-    cpu.sign(src);
-    cpu.zero(src);
-    return src;
+  const execute = val => {
+    cpu.carry(val & 0x80);
+    val = (val << 1) & 0xff;
+    cpu.sign(val);
+    cpu.zero(val);
+    return val;
   };
 
   if (opcode === 0x0a) {
     cpu.a = execute(cpu.a);
   } else {
-    const src = execute(mmu.r8(addr));
-    mmu.w8(src, addr);
+    const val = execute(mmu.r8(addr));
+    mmu.w8(val, addr);
   }
 }
 
@@ -220,10 +222,10 @@ export const beq = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.zero());
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function bit({cpu, mmu, addr}) {
-  const src = mmu.r8(addr);
-  cpu.sign(src);
-  cpu.overflow(src & 0x40);
-  cpu.zero(src & cpu.a);
+  const val = mmu.r8(addr);
+  cpu.sign(val);
+  cpu.overflow(val & 0x40);
+  cpu.zero(val & cpu.a);
 }
 
 /**
@@ -515,10 +517,10 @@ export function dey({cpu}) {
  * * Add 1 if page boundary is crossed.
  */
 export function eor({cpu, mmu, addr}) {
-  const src = mmu.r8(addr) ^ cpu.a;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.a = src;
+  const val = mmu.r8(addr) ^ cpu.a;
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.a = val;
 }
 
 /**
@@ -689,19 +691,19 @@ export function ldy({cpu, ...inst}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function lsr({opcode, cpu, mmu, addr}) {
-  const execute = src => {
-    cpu.carry(src & 1);
-    src >>= 1;
-    cpu.sign(src);
-    cpu.zero(src);
-    return src;
+  const execute = val => {
+    cpu.carry(val & 1);
+    val >>= 1;
+    cpu.sign(val);
+    cpu.zero(val);
+    return val;
   };
 
   if (opcode === 0x4a) {
     cpu.a = execute(cpu.a);
   } else {
-    const src = execute(mmu.r8(addr));
-    mmu.w8(src, addr);
+    const val = execute(mmu.r8(addr));
+    mmu.w8(val, addr);
   }
 }
 
@@ -739,10 +741,10 @@ export function nop() {}
  * * Add 1 on page crossing
  */
 export function ora({cpu, mmu, addr}) {
-  const src = mmu.r8(addr) | cpu.a;
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.a = src;
+  const val = mmu.r8(addr) | cpu.a;
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.a = val;
 }
 
 /**
@@ -831,21 +833,21 @@ export function plp({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rol({opcode, cpu, mmu, addr}) {
-  const execute = src => {
-    src <<= 1;
-    if (cpu.carry()) src |= 1;
-    cpu.carry(src > 0xff);
-    src &= 0xff;
-    cpu.sign(src);
-    cpu.zero(src);
-    return src;
+  const execute = val => {
+    val <<= 1;
+    if (cpu.carry()) val |= 1;
+    cpu.carry(val > 0xff);
+    val &= 0xff;
+    cpu.sign(val);
+    cpu.zero(val);
+    return val;
   };
 
   if (opcode === 0x2a) {
     cpu.a = execute(cpu.a);
   } else {
-    const src = execute(mmu.r8(addr));
-    mmu.w8(src, addr);
+    const val = execute(mmu.r8(addr));
+    mmu.w8(val, addr);
   }
 }
 
@@ -872,20 +874,20 @@ export function rol({opcode, cpu, mmu, addr}) {
  *         June, 1976.
  */
 export function ror({opcode, cpu, mmu, addr}) {
-  const execute = src => {
-    if (cpu.carry()) src |= 0x100;
-    cpu.carry(src & 1);
-    src >>= 1;
-    cpu.sign(src);
-    cpu.zero(src);
-    return src;
+  const execute = val => {
+    if (cpu.carry()) val |= 0x100;
+    cpu.carry(val & 1);
+    val >>= 1;
+    cpu.sign(val);
+    cpu.zero(val);
+    return val;
   };
 
   if (opcode === 0x6a) {
     cpu.a = execute(cpu.a);
   } else {
-    const src = execute(mmu.r8(addr));
-    mmu.w8(src, addr);
+    const val = execute(mmu.r8(addr));
+    mmu.w8(val, addr);
   }
 }
 
@@ -942,13 +944,13 @@ export function rts({cpu}) {
  */
 export function sbc({cpu, mmu, addr}) {
   const carry = cpu.carry() ? 0 : 1;
-  const src = mmu.r8(addr);
-  let temp = cpu.a - src - carry;
+  const val = mmu.r8(addr);
+  let temp = cpu.a - val - carry;
   cpu.sign(temp);
   cpu.zero(temp & 0xff);
-  cpu.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ src) & 0x80));
+  cpu.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ val) & 0x80));
   if (cpu.decimal()) {
-    if (((cpu.a & 0xf) - carry) < (src & 0xf)) {
+    if (((cpu.a & 0xf) - carry) < (val & 0xf)) {
       temp -= 6;
     }
     if (temp > 0x99) {
@@ -1325,10 +1327,10 @@ export const stp = unknown;
  * Absolute,Y  |LAR arg,Y  |$BB| 3 | 4 *
  */
 export function las({cpu, mmu, addr}) {
-  const src = cpu.sp & mmu.r8(addr);
-  cpu.sign(src);
-  cpu.zero(src);
-  cpu.a = cpu.x = cpu.sp = src;
+  const val = cpu.sp & mmu.r8(addr);
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.a = cpu.x = cpu.sp = val;
 }
 
 /**
@@ -1435,8 +1437,8 @@ export const sre = combine(lsr, eor);
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
 export function shx({cpu, mmu, addr}) {
-  const src = mmu.r8(addr);
-  const val = cpu.x & ((src >> 4) + 1);
+  let val = (mmu.r8(addr) >> 4) + 1;
+  val &= cpu.x;
   mmu.w8(val, addr);
 }
 
@@ -1455,8 +1457,8 @@ export function shx({cpu, mmu, addr}) {
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
 export function shy({cpu, mmu, addr}) {
-  const src = mmu.r8(addr);
-  const val = cpu.y & ((src >> 4) + 1);
+  let val = (mmu.r8(addr) >> 4) + 1;
+  val &= cpu.y;
   mmu.w8(val, addr);
 }
 
@@ -1489,7 +1491,7 @@ export const xaa = unknown;
  */
 export function tas({cpu, mmu, addr}) {
   cpu.sp = cpu.x & cpu.a;
-  const src = mmu.r8(addr);
-  const val = cpu.sp & ((src >> 4) + 1);
+  let val = (mmu.r8(addr) >> 4) + 1;
+  val &= cpu.sp;
   mmu.w8(val, addr);
 }
