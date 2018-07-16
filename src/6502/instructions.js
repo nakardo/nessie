@@ -12,7 +12,7 @@ function compare({cpu, mmu, addr}, val) {
   val -= mmu.r8(addr);
   cpu.carry(val >= 0);
   cpu.sign(val);
-  cpu.zero(val & 0xff);
+  cpu.zero(val);
 }
 
 function decrement({cpu}, val) {
@@ -79,7 +79,7 @@ export function adc({cpu, mmu, addr}) {
   const carry = cpu.carry() ? 1 : 0;
   const val = mmu.r8(addr);
   let temp = val + cpu.a + carry;
-  cpu.zero(temp & 0xff);
+  cpu.zero(temp);
   if (cpu.decimal()) {
     if (((cpu.a & 0xf) + (val & 0xf) + carry) > 9) {
       temp += 6;
@@ -947,7 +947,7 @@ export function sbc({cpu, mmu, addr}) {
   const val = mmu.r8(addr);
   let temp = cpu.a - val - carry;
   cpu.sign(temp);
-  cpu.zero(temp & 0xff);
+  cpu.zero(temp);
   cpu.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ val) & 0x80));
   if (cpu.decimal()) {
     if (((cpu.a & 0xf) - carry) < (val & 0xf)) {
