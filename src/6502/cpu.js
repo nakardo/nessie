@@ -34,7 +34,7 @@ export default class Cpu {
     val &= 0xff;
     const addr = 0x100 | this.sp;
     stack('push to: %s, val: %s', addr.to(16, 2), val.to(16));
-    this.mmu.w8(val, addr);
+    this.mmu.w8({val, addr});
     this.sp = --this.sp & 0xff;
   }
 

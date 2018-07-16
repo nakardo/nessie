@@ -68,7 +68,7 @@ export default class Ppu {
     throw new UnmappedAddressError(addr);
   }
 
-  w8(val, addr) {
+  w8({val, addr}) {
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
     val &= 0xff;

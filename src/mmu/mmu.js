@@ -83,7 +83,7 @@ export default class Mmu {
     throw new UnmappedAddressError(addr);
   }
 
-  w8(val, addr) {
+  w8({val, addr}) {
     assert.ok(typeof val === 'number', 'invalid value');
     assert.ok(typeof addr === 'number', 'invalid address');
 
@@ -95,7 +95,7 @@ export default class Mmu {
         this.ram[addr & 0x7ff] = val;
         return;
       case 0x2: case 0x3:
-        this.ppu.w8(val, addr);
+        this.ppu.w8({val, addr});
         return;
       case 0x4: case 0x5:
         if (addr < 0x20) {

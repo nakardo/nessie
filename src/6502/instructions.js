@@ -155,7 +155,7 @@ export function asl({opcode, cpu, mmu, addr}) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mmu.r8(addr));
-    mmu.w8(val, addr);
+    mmu.w8({val, addr});
   }
 }
 
@@ -461,7 +461,7 @@ export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
  */
 export function dec({cpu, mmu, addr}) {
   const val = decrement({cpu}, mmu.r8(addr));
-  mmu.w8(val, addr);
+  mmu.w8({val, addr});
 }
 
 /**
@@ -539,7 +539,7 @@ export function eor({cpu, mmu, addr}) {
  */
 export function inc({cpu, mmu, addr}) {
   const val = increment({cpu}, mmu.r8(addr));
-  mmu.w8(val, addr);
+  mmu.w8({val, addr});
 }
 
 /**
@@ -703,7 +703,7 @@ export function lsr({opcode, cpu, mmu, addr}) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mmu.r8(addr));
-    mmu.w8(val, addr);
+    mmu.w8({val, addr});
   }
 }
 
@@ -847,7 +847,7 @@ export function rol({opcode, cpu, mmu, addr}) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mmu.r8(addr));
-    mmu.w8(val, addr);
+    mmu.w8({val, addr});
   }
 }
 
@@ -887,7 +887,7 @@ export function ror({opcode, cpu, mmu, addr}) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mmu.r8(addr));
-    mmu.w8(val, addr);
+    mmu.w8({val, addr});
   }
 }
 
@@ -1026,7 +1026,7 @@ export function sei({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function sta({cpu, mmu, addr}) {
-  mmu.w8(cpu.a, addr);
+  mmu.w8({val: cpu.a, addr});
 }
 
 /**
@@ -1044,7 +1044,7 @@ export function sta({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function stx({cpu, mmu, addr}) {
-  mmu.w8(cpu.x, addr);
+  mmu.w8({val: cpu.x, addr});
 }
 
 /**
@@ -1062,7 +1062,7 @@ export function stx({cpu, mmu, addr}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function sty({cpu, mmu, addr}) {
-  mmu.w8(cpu.y, addr);
+  mmu.w8({val: cpu.y, addr});
 }
 
 /**
@@ -1181,7 +1181,7 @@ export function anc({cpu, ...inst}) {
  * Absolute    |AAX arg    |$8F| 3 | 4.
  */
 export function sax({cpu, mmu, addr}) {
-  mmu.w8(cpu.a & cpu.x, addr);
+  mmu.w8({val: cpu.a & cpu.x, addr});
 }
 
 /**
@@ -1234,7 +1234,7 @@ export function alr({...inst}) {
  * (Indirect),Y|AXA arg    |$93| 2 | 6
  */
 export function ahx({cpu, mmu, addr}) {
-  mmu.w8(cpu.x & cpu.a & 7, addr);
+  mmu.w8({val: cpu.x & cpu.a & 7, addr});
 }
 
 /**
@@ -1439,7 +1439,7 @@ export const sre = combine(lsr, eor);
 export function shx({cpu, mmu, addr}) {
   let val = (mmu.r8(addr) >> 4) + 1;
   val &= cpu.x;
-  mmu.w8(val, addr);
+  mmu.w8({val, addr});
 }
 
 /**
@@ -1459,7 +1459,7 @@ export function shx({cpu, mmu, addr}) {
 export function shy({cpu, mmu, addr}) {
   let val = (mmu.r8(addr) >> 4) + 1;
   val &= cpu.y;
-  mmu.w8(val, addr);
+  mmu.w8({val, addr});
 }
 
 /**
@@ -1493,5 +1493,5 @@ export function tas({cpu, mmu, addr}) {
   cpu.sp = cpu.x & cpu.a;
   let val = (mmu.r8(addr) >> 4) + 1;
   val &= cpu.sp;
-  mmu.w8(val, addr);
+  mmu.w8({val, addr});
 }
