@@ -1201,11 +1201,37 @@ export function sax({cpu, mmu, addr}) {
  *  ------------|-----------|---|---|---
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
-export function arr({cpu, ...inst}) {
-  and({...inst, cpu});
-  ror({...inst, cpu, opcode: 0x6a});
-  cpu.carry(cpu.a & 0x40);
-  cpu.overflow((cpu.a & 0x40) ^ (cpu.a & 0x20));
+export function arr({cpu, mmu, addr}) {
+  let val;
+  const and = val = cpu.a & mmu.r8(addr);
+  if (cpu.carry()) {
+    val |= 0x100;
+  }
+  val >>= 1; // `val` is ROR result actually.
+  cpu.zero(val);
+
+  if (cpu.decimal()) {
+    cpu.sign(cpu.carry() ? 0x80 : 0);
+    cpu.overflow((and ^ val) & 0x40);
+
+    let hnib = and >> 4;
+    let lnib = and & 0xf;
+
+    if ((lnib + 1) > 5) {
+      val = (val & 0xf0) | ((val + 6) & 0xf);
+    }
+    if ((hnib + 1) > 5) {
+      cpu.carry(true);
+      val = (val + 0x60) & 0xff;
+    } else {
+      cpu.carry(false);
+    }
+  } else {
+    cpu.sign(val);
+    cpu.carry(val & 0x40);
+    cpu.overflow((val & 0x40) ^ (val & 0x20));
+  }
+  cpu.a = val;
 }
 
 /**

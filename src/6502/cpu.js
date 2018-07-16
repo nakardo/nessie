@@ -89,7 +89,7 @@ export default class Cpu {
 
   zero(val) {
     if (val !== undefined) {
-      if (val == 0) this.stat |= FLAG.ZERO;
+      if ((val & 0xff) == 0) this.stat |= FLAG.ZERO;
       else this.stat &= ~FLAG.ZERO;
     }
     return !!(this.stat & FLAG.ZERO);
