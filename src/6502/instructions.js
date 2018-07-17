@@ -76,26 +76,27 @@ function unknown({opcode}) {
  * * Add 1 if page boundary is crossed.
  */
 export function adc({cpu, mmu, addr}) {
-  const carry = cpu.carry() ? 1 : 0;
   const val = mmu.r8(addr);
-  let temp = val + cpu.a + carry;
-  cpu.zero(temp);
+  const cy = cpu.carry() ? 1 : 0;
+  let res = cpu.a + val + cy;
+  cpu.zero(res);
   if (cpu.decimal()) {
-    if (((cpu.a & 0xf) + (val & 0xf) + carry) > 9) {
-      temp += 6;
+    if (((cpu.a & 0xf) + (val & 0xf) + cy) > 9) {
+      res += 6;
     }
-    cpu.sign(temp);
-    cpu.overflow(!((cpu.a ^ val) & 0x80) && ((cpu.a ^ temp) & 0x80));
-    if (temp > 0x99) {
-      temp += 96;
+    cpu.sign(res);
+    cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
+    if (res > 0x99) {
+      res += 0x60;
     }
-    cpu.carry(temp > 0x99);
+    cpu.carry(res > 0x99);
+    console.log('adc', cpu.a.to(16), val.to(16), cy, (res & 0xff).to(16));
   } else {
-    cpu.sign(temp);
-    cpu.overflow(!((cpu.a ^ val) & 0x80) && ((cpu.a ^ temp) & 0x80));
-    cpu.carry(temp > 0xff);
+    cpu.sign(res);
+    cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
+    cpu.carry(res > 0xff);
   }
-  cpu.a = temp & 0xff;
+  cpu.a = res & 0xff;
 }
 
 /**
@@ -960,6 +961,14 @@ export function sbc({cpu, mmu, addr}) {
   cpu.carry(temp < 0);
   cpu.a = (temp & 0xff);
 }
+
+// TODO(nakardo): above can be implemented as:
+// void SBC(Byte value)
+// {
+// carry = TRUE;
+// ADC(value);
+// }
+//
 
 /**
  * SEC                        SEC Set carry flag                         SEC
