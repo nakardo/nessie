@@ -8,27 +8,27 @@ function branch({branchCycles, cpu, mmu, addr}, cond) {
   }
 }
 
-function compare({cpu, mmu, addr}, val) {
-  val -= mmu.r8(addr);
-  cpu.carry(val >= 0);
+function compare({cpu, mmu, addr}, reg) {
+  let val = mmu.r8(addr);
+  cpu.carry(reg >= val);
+  val = reg - val;
   cpu.sign(val);
   cpu.zero(val);
+  return val & 0xff;
 }
 
 function decrement({cpu}, val) {
   val -= 1;
-  val &= 0xff;
   cpu.sign(val);
   cpu.zero(val);
-  return val;
+  return val & 0xff;
 }
 
 function increment({cpu}, val) {
   val += 1;
-  val &= 0xff;
   cpu.sign(val);
   cpu.zero(val);
-  return val;
+  return val & 0xff;
 }
 
 function load({cpu, mmu, addr}) {
@@ -90,7 +90,7 @@ export function adc({cpu, mmu, addr}) {
       res += 0x60;
     }
     cpu.carry(res > 0x99);
-    console.log('adc', cpu.a.to(16), val.to(16), cy, (res & 0xff).to(16));
+    console.log('adc', cpu.a.to(16), val.to(16), cy, (res & 0xff).to(16), cpu.stat.to(2));
   } else {
     cpu.sign(res);
     cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
@@ -413,7 +413,7 @@ export function clv({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export const cmp = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.a);
+export const cmp = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.a));
 
 /**
  * CPX                  CPX Compare Memory and Index X                   CPX
@@ -428,7 +428,7 @@ export const cmp = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.a);
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpx = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.x);
+export const cpx = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.x));
 
 /**
  * CPY                  CPY Compare memory and index Y                   CPY
@@ -443,7 +443,7 @@ export const cpx = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.x);
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
+export const cpy = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.y));
 
 /**
  * DEC                   DEC Decrement memory by one                     DEC
@@ -963,6 +963,7 @@ export function sbc({cpu, mmu, addr}) {
 }
 
 // TODO(nakardo): above can be implemented as:
+// See: http://forums.nesdev.com/viewtopic.php?t=8703
 // void SBC(Byte value)
 // {
 // carry = TRUE;
@@ -1283,12 +1284,8 @@ export function ahx({cpu, mmu, addr}) {
  * ------------|-----------|---|---|---
  * Immediate   |AXS #arg   |$CB| 2 | 2
  */
-export function axs({cpu, mmu, addr}) {
-  const val = (cpu.x & cpu.a) - mmu.r8(addr);
-  cpu.sign(val);
-  cpu.zero(val);
-  cpu.carry(val >= 0);
-  cpu.x = val & 0xff;
+export function axs({cpu, ...inst}) {
+  cpu.x = compare({...inst, cpu}, cpu.x & cpu.a);
 }
 
 /**
