@@ -931,20 +931,11 @@ export function rts({cpu}) {
  */
 export function sbc({cpu, mmu, addr}) {
   const val = mmu.r8(addr);
-  const cy = cpu.carry() ? 0 : 1;
-  let res = cpu.a - val - cy;
+  const res = cpu.a - val - (cpu.carry() ? 0 : 1);
   cpu.sign(res);
   cpu.zero(res);
-  cpu.overflow(((cpu.a ^ res) & 0x80) && ((cpu.a ^ val) & 0x80));
-  if (cpu.decimal()) {
-    if (((cpu.a & 0xf) - cy) < (val & 0xf)) {
-      res -= 6;
-    }
-    if (res > 0x99) {
-      res -= 0x60;
-    }
-  }
-  cpu.carry(res < 0x100);
+  cpu.overflow((cpu.a ^ val) & (cpu.a ^ res) & 0x80);
+  cpu.carry((res & 0x100) != 0 ? false : true);
   cpu.a = res & 0xff;
 }
 
