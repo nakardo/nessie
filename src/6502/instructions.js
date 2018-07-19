@@ -77,25 +77,11 @@ function unknown({opcode}) {
  */
 export function adc({cpu, mmu, addr}) {
   const val = mmu.r8(addr);
-  const cy = cpu.carry() ? 1 : 0;
-  let res = cpu.a + val + cy;
+  const res = cpu.a + val + (cpu.carry() ? 1 : 0);
   cpu.zero(res);
-  if (cpu.decimal()) {
-    if (((cpu.a & 0xf) + (val & 0xf) + cy) > 9) {
-      res += 6;
-    }
-    cpu.sign(res);
-    cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
-    if (res > 0x99) {
-      res += 0x60;
-    }
-    cpu.carry(res > 0x99);
-    console.log('adc', cpu.a.to(16), val.to(16), cy, (res & 0xff).to(16), cpu.stat.to(2));
-  } else {
-    cpu.sign(res);
-    cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
-    cpu.carry(res > 0xff);
-  }
+  cpu.sign(res);
+  cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
+  cpu.carry(res > 0xff);
   cpu.a = res & 0xff;
 }
 
@@ -944,22 +930,22 @@ export function rts({cpu}) {
  * * Add 1 when page boundary is crossed.
  */
 export function sbc({cpu, mmu, addr}) {
-  const carry = cpu.carry() ? 0 : 1;
   const val = mmu.r8(addr);
-  let temp = cpu.a - val - carry;
-  cpu.sign(temp);
-  cpu.zero(temp);
-  cpu.overflow(((cpu.a ^ temp) & 0x80) && ((cpu.a ^ val) & 0x80));
+  const cy = cpu.carry() ? 0 : 1;
+  let res = cpu.a - val - cy;
+  cpu.sign(res);
+  cpu.zero(res);
+  cpu.overflow(((cpu.a ^ res) & 0x80) && ((cpu.a ^ val) & 0x80));
   if (cpu.decimal()) {
-    if (((cpu.a & 0xf) - carry) < (val & 0xf)) {
-      temp -= 6;
+    if (((cpu.a & 0xf) - cy) < (val & 0xf)) {
+      res -= 6;
     }
-    if (temp > 0x99) {
-      temp -= 0x60;
+    if (res > 0x99) {
+      res -= 0x60;
     }
   }
-  cpu.carry(temp < 0);
-  cpu.a = (temp & 0xff);
+  cpu.carry(res < 0x100);
+  cpu.a = res & 0xff;
 }
 
 // TODO(nakardo): above can be implemented as:
