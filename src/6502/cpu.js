@@ -198,9 +198,9 @@ export default class Cpu {
        * $3000.
        */
       case MODE.IND: {
-        const lba = this.mmu.r16(next);
-        const hba = (lba & 0xff00) | ((lba + 1) & 0xff);
-        addr = this.mmu.r8(lba) | this.mmu.r8(hba) << 8;
+        const laddr = this.mmu.r16(next);
+        const haddr = (laddr & 0xff00) | ((laddr + 1) & 0xff);
+        addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
         break;
       }
       case MODE.IDX_IND:
