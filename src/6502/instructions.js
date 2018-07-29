@@ -98,9 +98,7 @@ function unknown({opcode}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function adc({cpu, mmu, addr}) {
-  addWithCarry({cpu}, mmu.r8(addr));
-}
+export const adc = ({cpu, mmu, addr}) => addWithCarry({cpu}, mmu.r8(addr));
 
 /**
  * AND                  "AND" memory with accumulator                    AND
@@ -950,8 +948,9 @@ export function rts({cpu}) {
  * * Add 1 when page boundary is crossed.
  */
 export function sbc({cpu, mmu, addr}) {
-  addWithCarry({cpu}, mmu.r8(addr) ^ 0xff);
-}
+  const val = mmu.r8(addr) ^ 0xff;
+  addWithCarry({cpu}, val);
+};
 
 /**
  * SEC                        SEC Set carry flag                         SEC
