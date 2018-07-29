@@ -47,9 +47,10 @@ const andhb = ({register, index }) => function andhb({cpu, mmu, operand}) {
   } else {
     addr = (haddr << 8) + laddr + cpu[index];
   }
+
   const val = cpu[register] & (haddr + 1);
   mmu.w8({val, addr});
-}
+};
 
 const transfer = ({from, to}) => function transfer({cpu}) {
   const val = cpu[from];
