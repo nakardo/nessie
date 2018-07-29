@@ -38,6 +38,15 @@ function load({cpu, mmu, addr}) {
   return val;
 }
 
+function addWithCarry({cpu}, val) {
+  const res = cpu.a + val + (cpu.carry() ? 1 : 0);
+  cpu.zero(res);
+  cpu.sign(res);
+  cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
+  cpu.carry(res > 0xff);
+  cpu.a = res & 0xff;
+}
+
 const andhb = ({register, index }) => function andhb({cpu, mmu, operand}) {
   let addr = mmu.r16(operand);
   const haddr = addr >> 8;
@@ -90,13 +99,7 @@ function unknown({opcode}) {
  * * Add 1 if page boundary is crossed.
  */
 export function adc({cpu, mmu, addr}) {
-  const val = mmu.r8(addr);
-  const res = cpu.a + val + (cpu.carry() ? 1 : 0);
-  cpu.zero(res);
-  cpu.sign(res);
-  cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
-  cpu.carry(res > 0xff);
-  cpu.a = res & 0xff;
+  addWithCarry({cpu}, mmu.r8(addr));
 }
 
 /**
@@ -947,23 +950,8 @@ export function rts({cpu}) {
  * * Add 1 when page boundary is crossed.
  */
 export function sbc({cpu, mmu, addr}) {
-  const val = mmu.r8(addr);
-  const res = cpu.a - val - (cpu.carry() ? 0 : 1);
-  cpu.sign(res);
-  cpu.zero(res);
-  cpu.overflow((cpu.a ^ val) & (cpu.a ^ res) & 0x80);
-  cpu.carry((res & 0x100) != 0 ? false : true);
-  cpu.a = res & 0xff;
+  addWithCarry({cpu}, mmu.r8(addr) ^ 0xff);
 }
-
-// TODO(nakardo): above can be implemented as:
-// See: http://forums.nesdev.com/viewtopic.php?t=8703
-// void SBC(Byte value)
-// {
-// carry = TRUE;
-// ADC(value);
-// }
-//
 
 /**
  * SEC                        SEC Set carry flag                         SEC
