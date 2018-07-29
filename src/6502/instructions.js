@@ -38,6 +38,19 @@ function load({cpu, mmu, addr}) {
   return val;
 }
 
+const andhb = ({reg, idx}) => function writeAndWithHighByte({cpu, mmu, operand}) {
+  const addr = mmu.r16(operand);
+  const haddr = addr >> 8;
+  let laddr = addr & 0xff;
+  if ((laddr + cpu[idx]) > 0xff) {
+    laddr += ((haddr & cpu[reg]) << 8) + cpu[idx];
+  } else {
+    laddr += (haddr << 8) + cpu[idx];
+  }
+  const res = cpu[reg] & (haddr + 1);
+  mmu.w8({val: res, addr: laddr});
+}
+
 const transfer = ({from, to}) => function transfer({cpu}) {
   const val = cpu[from];
   cpu.sign(val);
@@ -1427,18 +1440,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export function shx({cpu, mmu, operand}) {
-  const addr = mmu.r16(operand);
-  const haddr = addr >> 8;
-  let laddr = addr & 0xff;
-  if ((laddr + cpu.y) > 0xff) {
-    laddr += ((haddr & cpu.x) << 8) + cpu.y;
-  } else {
-    laddr += (haddr << 8) + cpu.y;
-  }
-  const val = cpu.x & (haddr + 1);
-  mmu.w8({val, addr: laddr});
-}
+export const shx = andhb({reg: 'x', idx: 'y'});
 
 /**
  * SYA (SHY) [SAY]
@@ -1454,18 +1456,7 @@ export function shx({cpu, mmu, operand}) {
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export function shy({cpu, mmu, operand}) {
-  const addr = mmu.r16(operand);
-  const haddr = addr >> 8;
-  let laddr = addr & 0xff;
-  if ((laddr + cpu.x) > 0xff) {
-    laddr += ((haddr & cpu.y) << 8) + cpu.x;
-  } else {
-    laddr += (haddr << 8) + cpu.x;
-  }
-  const val = cpu.y & (haddr + 1);
-  mmu.w8({val, addr: laddr});
-}
+export const shy = andhb({reg: 'y', idx: 'x'});
 
 /**
  * XAA (ANE) [XAA]
