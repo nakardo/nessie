@@ -115,7 +115,7 @@ export default class Mmu {
         return 0;
       default: break;
     }
-    throw new UnmappedAddressError(addr);
+    // throw new UnmappedAddressError(addr);
   }
 
   r16(addr) {

@@ -203,9 +203,12 @@ export default class Cpu {
         addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
         break;
       }
-      case MODE.IDX_IND:
-        addr = this.mmu.r16(this.mmu.r8(operand) + this.x);
+      case MODE.IDX_IND: {
+        const laddr = (this.mmu.r8(operand) + this.x) & 0xff;
+        const haddr = (laddr + 1) & 0xff;
+        addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
         break;
+      }
       case MODE.IND_IDX:
         addr = this.mmu.r16(this.mmu.r8(operand)) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
