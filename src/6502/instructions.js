@@ -47,7 +47,7 @@ function addWithCarry({cpu}, val) {
   cpu.a = res & 0xff;
 }
 
-const andhb = ({register, index }) => function andhb({cpu, mmu, operand}) {
+const andhb = ({register, index}) => function andhb({cpu, mmu, operand}) {
   let addr = mmu.r16(operand);
   const haddr = addr >> 8;
   const laddr = addr & 0xff;
