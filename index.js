@@ -9,11 +9,17 @@ const nes = new Nes();
 // - 04-zero_page.nes
 // - 05-zp_xy.nes
 // - 06-absolute.nes
+// - 07-abs_xy.nes
 // - 10-branches.nes
+// - 11-stack.nes
+// - 12-jmp_jsr.nes
+// - 13-rts.nes
+// - 14-rti.nes
+// - 15-brk.nes
+// - 16-special.nes
 //
 // Failing:
-// - 07-abs_xy.nes (Unimplemented opcode: 0x02)
 // - 08-ind_x.nes (UnmappedAddressError: 0xa5ff is an unknown address)
 // - 09-ind_y.nes (UnmappedAddressError: 0xffff is an unknown address)
-nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/07-abs_xy.nes'));
+nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/08-ind_x.nes'));
 nes.start();
