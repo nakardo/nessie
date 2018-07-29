@@ -38,10 +38,7 @@ function load({cpu, mmu, addr}) {
   return val;
 }
 
-const andWithHighByte = ({
-  register,
-  index
-}) => function andWithHighByte({cpu, mmu, operand}) {
+const andhb = ({register, index }) => function andhb({cpu, mmu, operand}) {
   let addr = mmu.r16(operand);
   const haddr = addr >> 8;
   const laddr = addr & 0xff;
@@ -1444,7 +1441,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export const shx = andWithHighByte({register: 'x', index: 'y'});
+export const shx = andhb({register: 'x', index: 'y'});
 
 /**
  * SYA (SHY) [SAY]
@@ -1460,7 +1457,7 @@ export const shx = andWithHighByte({register: 'x', index: 'y'});
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export const shy = andWithHighByte({register: 'y', index: 'x'});
+export const shy = andhb({register: 'y', index: 'x'});
 
 /**
  * XAA (ANE) [XAA]
