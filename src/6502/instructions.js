@@ -39,16 +39,16 @@ function load({cpu, mmu, addr}) {
 }
 
 const andhb = ({reg, idx}) => function andWithHighByte({cpu, mmu, operand}) {
-  const addr = mmu.r16(operand);
+  let addr = mmu.r16(operand);
   const haddr = addr >> 8;
-  let laddr = addr & 0xff;
+  const laddr = addr & 0xff;
   if ((laddr + cpu[idx]) > 0xff) {
-    laddr += ((haddr & cpu[reg]) << 8) + cpu[idx];
+    addr = ((haddr & cpu[reg]) << 8) + laddr + cpu[idx];
   } else {
-    laddr += (haddr << 8) + cpu[idx];
+    addr = (haddr << 8) + laddr + cpu[idx];
   }
-  const res = cpu[reg] & (haddr + 1);
-  mmu.w8({val: res, addr: laddr});
+  const val = cpu[reg] & (haddr + 1);
+  mmu.w8({val, addr});
 }
 
 const transfer = ({from, to}) => function transfer({cpu}) {
