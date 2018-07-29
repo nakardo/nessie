@@ -2,19 +2,19 @@ import {IRQ_BRK_ADDR} from './interrupts';
 
 function branch({branchCycles, cpu, mmu, addr}, cond) {
   if (cond) {
-    const effective = cpu.pc + mmu.r8(addr).signed();
-    cpu.t += cpu.pageCrossedCycles({branchCycles, addr: effective});
-    cpu.pc = effective & 0xffff;
+    addr = cpu.pc + mmu.r8(addr).signed();
+    cpu.t += cpu.pageCrossedCycles({branchCycles, addr});
+    cpu.pc = addr & 0xffff;
   }
 }
 
-function compare({cpu, mmu, addr}, reg) {
-  let val = mmu.r8(addr);
-  cpu.carry(reg >= val);
-  val = reg - val;
-  cpu.sign(val);
-  cpu.zero(val);
-  return val & 0xff;
+function compare({cpu, mmu, addr}, val) {
+  let res = mmu.r8(addr);
+  cpu.carry(val >= res);
+  res = val - res;
+  cpu.sign(res);
+  cpu.zero(res);
+  return res & 0xff;
 }
 
 function decrement({cpu}, val) {
@@ -38,16 +38,19 @@ function load({cpu, mmu, addr}) {
   return val;
 }
 
-const andhb = ({reg, idx}) => function andWithHighByte({cpu, mmu, operand}) {
+const andWithHighByte = ({
+  register,
+  index
+}) => function andWithHighByte({cpu, mmu, operand}) {
   let addr = mmu.r16(operand);
   const haddr = addr >> 8;
   const laddr = addr & 0xff;
-  if ((laddr + cpu[idx]) > 0xff) {
-    addr = ((haddr & cpu[reg]) << 8) + laddr + cpu[idx];
+  if ((laddr + cpu[index]) > 0xff) {
+    addr = ((haddr & cpu[register]) << 8) + laddr + cpu[index];
   } else {
-    addr = (haddr << 8) + laddr + cpu[idx];
+    addr = (haddr << 8) + laddr + cpu[index];
   }
-  const val = cpu[reg] & (haddr + 1);
+  const val = cpu[register] & (haddr + 1);
   mmu.w8({val, addr});
 }
 
@@ -792,9 +795,10 @@ export function php({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function pla({cpu}) {
-  cpu.a = cpu.pull8();
-  cpu.sign(cpu.a);
-  cpu.zero(cpu.a);
+  const val = cpu.pull8();
+  cpu.sign(val);
+  cpu.zero(val);
+  cpu.a = val;
 }
 
 /**
@@ -1440,7 +1444,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export const shx = andhb({reg: 'x', idx: 'y'});
+export const shx = andWithHighByte({register: 'x', index: 'y'});
 
 /**
  * SYA (SHY) [SAY]
@@ -1456,7 +1460,7 @@ export const shx = andhb({reg: 'x', idx: 'y'});
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export const shy = andhb({reg: 'y', idx: 'x'});
+export const shy = andWithHighByte({register: 'y', index: 'x'});
 
 /**
  * XAA (ANE) [XAA]
