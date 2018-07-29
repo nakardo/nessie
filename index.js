@@ -11,6 +11,7 @@ const nes = new Nes();
 // - 06-absolute.nes
 // - 07-abs_xy.nes
 // - 08-ind_x.nes
+// - 09-ind_y.nes
 // - 10-branches.nes
 // - 11-stack.nes
 // - 12-jmp_jsr.nes
@@ -18,9 +19,5 @@ const nes = new Nes();
 // - 14-rti.nes
 // - 15-brk.nes
 // - 16-special.nes
-//
-//
-// Failing:
-// - 09-ind_y.nes (UnmappedAddressError: 0xffff is an unknown address)
 nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/09-ind_y.nes'));
 nes.start();
