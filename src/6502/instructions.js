@@ -47,17 +47,17 @@ function addWithCarry({cpu}, val) {
   cpu.a = res & 0xff;
 }
 
-const andhb = ({register, index}) => function andhb({cpu, mmu, operand}) {
+const andWithHighByte = ({reg, idx}) => function andhb({cpu, mmu, operand}) {
   let addr = mmu.r16(operand);
   const haddr = addr >> 8;
   const laddr = addr & 0xff;
-  if ((laddr + cpu[index]) > 0xff) {
-    addr = ((haddr & cpu[register]) << 8) + laddr + cpu[index];
+  if ((laddr + cpu[idx]) > 0xff) {
+    addr = ((haddr & cpu[reg]) << 8) + laddr + cpu[idx];
   } else {
-    addr = (haddr << 8) + laddr + cpu[index];
+    addr = (haddr << 8) + laddr + cpu[idx];
   }
 
-  const val = cpu[register] & (haddr + 1);
+  const val = cpu[reg] & (haddr + 1);
   mmu.w8({val, addr});
 };
 
@@ -1430,7 +1430,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export const shx = andhb({register: 'x', index: 'y'});
+export const shx = andWithHighByte({reg: 'x', idx: 'y'});
 
 /**
  * SYA (SHY) [SAY]
@@ -1446,7 +1446,7 @@ export const shx = andhb({register: 'x', index: 'y'});
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export const shy = andhb({register: 'y', index: 'x'});
+export const shy = andWithHighByte({reg: 'y', idx: 'x'});
 
 /**
  * XAA (ANE) [XAA]
