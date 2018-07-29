@@ -2,9 +2,9 @@ import {IRQ_BRK_ADDR} from './interrupts';
 
 function branch({branchCycles, cpu, mmu, addr}, cond) {
   if (cond) {
-    const next = cpu.pc + mmu.r8(addr).signed();
-    cpu.t += cpu.pageCrossedCycles({branchCycles, addr: next});
-    cpu.pc = next & 0xffff;
+    const effective = cpu.pc + mmu.r8(addr).signed();
+    cpu.t += cpu.pageCrossedCycles({branchCycles, addr: effective});
+    cpu.pc = effective & 0xffff;
   }
 }
 
@@ -1427,10 +1427,17 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export function shx({cpu, mmu, addr}) {
-  let val = (mmu.r8(addr) >> 4) + 1;
-  val &= cpu.x;
-  mmu.w8({val, addr});
+export function shx({cpu, mmu, operand}) {
+  const addr = mmu.r16(operand);
+  const haddr = addr >> 8;
+  let laddr = addr & 0xff;
+  if ((laddr + cpu.y) > 0xff) {
+    laddr += ((haddr & cpu.x) << 8) + cpu.y;
+  } else {
+    laddr += (haddr << 8) + cpu.y;
+  }
+  const val = cpu.x & (haddr + 1);
+  mmu.w8({val, addr: laddr});
 }
 
 /**
@@ -1447,10 +1454,17 @@ export function shx({cpu, mmu, addr}) {
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export function shy({cpu, mmu, addr}) {
-  let val = (mmu.r8(addr) >> 4) + 1;
-  val &= cpu.y;
-  mmu.w8({val, addr});
+export function shy({cpu, mmu, operand}) {
+  const addr = mmu.r16(operand);
+  const haddr = addr >> 8;
+  let laddr = addr & 0xff;
+  if ((laddr + cpu.x) > 0xff) {
+    laddr += ((haddr & cpu.y) << 8) + cpu.x;
+  } else {
+    laddr += (haddr << 8) + cpu.x;
+  }
+  const val = cpu.y & (haddr + 1);
+  mmu.w8({val, addr: laddr});
 }
 
 /**

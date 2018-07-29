@@ -160,7 +160,7 @@ export default class Cpu {
   runCycle() {
     const inst = this.decode();
     const {mode, bytes, cycles, branchCycles, execute} = inst;
-    const next = this.pc + 1;
+    const operand = this.pc + 1;
 
     let addr;
     let totalCycles = cycles;
@@ -170,17 +170,17 @@ export default class Cpu {
         break;
       case MODE.REL:
       case MODE.IMM:
-        addr = next;
+        addr = operand;
         break;
       case MODE.ABS:
-        addr = this.mmu.r16(next);
+        addr = this.mmu.r16(operand);
         break;
       case MODE.ABS_X:
-        addr = this.mmu.r16(next) + this.x;
+        addr = this.mmu.r16(operand) + this.x;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.ABS_Y:
-        addr = this.mmu.r16(next) + this.y;
+        addr = this.mmu.r16(operand) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       /**
@@ -198,26 +198,26 @@ export default class Cpu {
        * $3000.
        */
       case MODE.IND: {
-        const laddr = this.mmu.r16(next);
+        const laddr = this.mmu.r16(operand);
         const haddr = (laddr & 0xff00) | ((laddr + 1) & 0xff);
         addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
         break;
       }
       case MODE.IDX_IND:
-        addr = this.mmu.r16(this.mmu.r8(next) + this.x);
+        addr = this.mmu.r16(this.mmu.r8(operand) + this.x);
         break;
       case MODE.IND_IDX:
-        addr = this.mmu.r16(this.mmu.r8(next)) + this.y;
+        addr = this.mmu.r16(this.mmu.r8(operand)) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.ZERO_PAGE:
-        addr = this.mmu.r8(next);
+        addr = this.mmu.r8(operand);
         break;
       case MODE.ZERO_PAGE_X:
-        addr = (this.mmu.r8(next) + this.x) & 0xff;
+        addr = (this.mmu.r8(operand) + this.x) & 0xff;
         break;
       case MODE.ZERO_PAGE_Y:
-        addr = (this.mmu.r8(next) + this.y) & 0xff;
+        addr = (this.mmu.r8(operand) + this.y) & 0xff;
         break;
       default:
         throw new Error('Unknown addressing mode');
@@ -226,6 +226,6 @@ export default class Cpu {
     this.pc = (this.pc + bytes) & 0xffff;
     this.t += totalCycles;
 
-    execute({...inst, cpu: this, mmu: this.mmu, addr});
+    execute({...inst, cpu: this, mmu: this.mmu, addr, operand});
   }
 };
