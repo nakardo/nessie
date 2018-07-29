@@ -38,7 +38,7 @@ function load({cpu, mmu, addr}) {
   return val;
 }
 
-const andhb = ({reg, idx}) => function writeAndWithHighByte({cpu, mmu, operand}) {
+const andhb = ({reg, idx}) => function andWithHighByte({cpu, mmu, operand}) {
   const addr = mmu.r16(operand);
   const haddr = addr >> 8;
   let laddr = addr & 0xff;
