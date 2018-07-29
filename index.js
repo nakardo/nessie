@@ -11,7 +11,7 @@ const nes = new Nes();
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/05-zp_xy.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/06-absolute.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/07-abs_xy.nes'));
-// nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/08-ind_x.nes'));
+nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/08-ind_x.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/09-ind_y.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/10-branches.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/11-stack.nes'));
@@ -22,5 +22,5 @@ const nes = new Nes();
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/16-special.nes'));
 //
 // All tests:
-nes.loadCart(fs.readFileSync('./roms/instr_test-v5/official_only.nes'));
+// nes.loadCart(fs.readFileSync('./roms/instr_test-v5/official_only.nes'));
 nes.start();
