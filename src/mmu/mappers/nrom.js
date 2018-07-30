@@ -4,10 +4,10 @@ import {UnmappedAddressError} from '../../errors';
 const debug = Debug('nes:mapper:nrom');
 
 export default class NROM {
+  ram = new Uint8Array(0x2000); // SRAM
   rom = null; // PRG-ROM
   romBank0 = 0;
   romBank1 = 0;
-  ram = new Uint8Array(0x2000); // SRAM
 
   static createMemory({data, pages, size}) {
     return new Array(pages).fill(null).map((_, i) => {
@@ -23,8 +23,9 @@ export default class NROM {
 
     const data = cart.slice(16);
     this.rom = NROM.createMemory({data, pages: romPagesCount, size: 0x4000});
+    this.romPagesCount = romPagesCount;
     this.romBank0 = 0;
-    this.romBank1 = romPagesCount - 1;
+    this.romBank1 = this.romPagesCount - 1;
 
     // TODO(nakardo): pull CHR-ROM data here.
   }
