@@ -23,9 +23,8 @@ export default class NROM {
 
     const data = cart.slice(16);
     this.rom = NROM.createMemory({data, pages: romPagesCount, size: 0x4000});
-    this.romPagesCount = romPagesCount;
     this.romBank0 = 0;
-    this.romBank1 = this.romPagesCount - 1;
+    this.romBank1 = romPagesCount - 1;
 
     // TODO(nakardo): pull CHR-ROM data here.
   }

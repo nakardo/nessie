@@ -98,6 +98,12 @@ export default class Mmu {
         }
         this.mapper.w8({val, addr});
         return;
+      case 0x8: case 0x9:
+      case 0xa: case 0xb:
+      case 0xc: case 0xd:
+      case 0xe: case 0xf:
+        this.mapper.w8({val, addr});
+        return;
       default: break;
     }
     throw new UnmappedAddressError(addr);

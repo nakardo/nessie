@@ -126,24 +126,27 @@ export default class MMC1 extends NROM {
 
   w8({val, addr}) {
     switch (addr >> 12) {
+      case 0x6: case 0x7:
+        super.w8({val, addr});
+        return;
       case 0x8: case 0x9:
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
         if (val & 0x80) {
-          shift = 0b10000;
+          this.shift = 0b10000;
           return;
-        } else if (shift & 1) {
-          shift >>= 1;
-          shift |= (val & 1) << 4;
+        }
+        this.shift >>= 1;
+        this.shift |= (val & 1) << 4;
+
+        if (this.shift & 1) {
           const reg = (addr >> 13) & 3;
           if (reg == 1) {
 
           }
-          shift = 0b10000;
+          this.shift = 0b10000;
         }
-        shift >>= 1;
-        shift |= (val & 1) << 4;
         return;
       default: break;
     }
