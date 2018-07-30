@@ -4,8 +4,17 @@ import {UnmappedAddressError} from '../../errors';
 const debug = Debug('nes:mapper:nrom');
 
 export default class NROM {
-  ram = new Uint8Array(0x2000); // PRG-ROM
-  rom = null; // SRAM
+  rom = null; // PRG-ROM
+  romBank0 = 0;
+  romBank1 = 0;
+  ram = new Uint8Array(0x2000); // SRAM
+
+  static createMemory({data, pages, size}) {
+    return new Array(pages).fill(null).map((_, i) => {
+      const offset = i * size;
+      return data.slice(offset, offset + size);
+    });
+  }
 
   constructor(cart) {
     const romPagesCount = cart[4];
@@ -13,17 +22,12 @@ export default class NROM {
     debug('8K CHR-ROM page count: %d', cart[5]);
 
     const data = cart.slice(16);
-    this.rom = this.createMemory({data, pages: romPagesCount, size: 0x4000});
+    this.rom = NROM.createMemory({data, pages: romPagesCount, size: 0x4000});
     this.romPagesCount = romPagesCount;
+    this.romBank0 = 0;
+    this.romBank1 = this.romPagesCount - 1;
 
     // TODO(nakardo): pull CHR-ROM data here.
-  }
-
-  createMemory({data, pages, size}) {
-    return new Array(pages).fill(null).map((_, i) => {
-      const offset = i * size;
-      return data.slice(offset, offset + size);
-    });
   }
 
   r8(addr) {
@@ -32,10 +36,10 @@ export default class NROM {
         return this.ram[addr & 0x1fff];
       case 0x8: case 0x9:
       case 0xa: case 0xb:
-        return this.rom[0][addr & 0x3fff];
+        return this.rom[this.romBank0][addr & 0x3fff];
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        return this.rom[this.romPagesCount - 1][addr & 0x3fff];
+        return this.rom[this.romBank1][addr & 0x3fff];
       default: break;
     }
     throw new UnmappedAddressError(addr);
