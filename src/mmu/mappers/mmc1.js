@@ -139,11 +139,12 @@ export default class MMC1 extends NROM {
   }
 
   updateBankMode(val) {
+    this.romBank0 = 0;
     const mode = (this.register >> 2) & 3;
     if (mode == 0 || mode == 1) {
       this.romBank0 = val & 0xfe;
     } else {
-      this.romBank0 = this.romBank1 = 0;
+      this.romBank1 = 0;
       if (mode == 2) this.romBank1 = val;
       else this.romBank0 = val;
     }
@@ -162,10 +163,8 @@ export default class MMC1 extends NROM {
           this.reset();
         } else if (this.register & 1) {
           this.shift(val);
-          const reg = (addr >> 13) & 3;
-          if (reg == 0) {
-            this.updateBankMode(val);
-          }
+          const select = (addr >> 13) & 3;
+          if (select == 0) this.updateBankMode(val);
           this.reset();
         } else {
           this.shift(val);
