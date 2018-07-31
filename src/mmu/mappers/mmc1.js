@@ -122,7 +122,32 @@ const debug = Debug('nes:mapper:mmc1');
  *           5-bit array for this data, not a separate one for each register.
  */
 export default class MMC1 extends NROM {
-  shift = 0b10000;
+  register = 0;
+
+  constructor(cart) {
+    super(cart);
+    this.reset();
+  }
+
+  reset() {
+    this.register = 0b10000;
+  }
+
+  shift(val) {
+    this.register >>= 1;
+    this.register |= (val & 1) << 4;
+  }
+
+  updateBankMode(val) {
+    const mode = (this.register >> 2) & 3;
+    if (mode == 0 || mode == 1) {
+      this.romBank0 = val & 0xfe;
+    } else {
+      this.romBank0 = this.romBank1 = 0;
+      if (mode == 2) this.romBank1 = val;
+      else this.romBank0 = val;
+    }
+  }
 
   w8({val, addr}) {
     switch (addr >> 12) {
@@ -134,18 +159,16 @@ export default class MMC1 extends NROM {
       case 0xc: case 0xd:
       case 0xe: case 0xf:
         if (val & 0x80) {
-          this.shift = 0b10000;
-          return;
-        }
-        this.shift >>= 1;
-        this.shift |= (val & 1) << 4;
-
-        if (this.shift & 1) {
+          this.reset();
+        } else if (this.register & 1) {
+          this.shift(val);
           const reg = (addr >> 13) & 3;
-          if (reg == 1) {
-
+          if (reg == 0) {
+            this.updateBankMode(val);
           }
-          this.shift = 0b10000;
+          this.reset();
+        } else {
+          this.shift(val);
         }
         return;
       default: break;
