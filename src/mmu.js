@@ -5,7 +5,7 @@ import Cart from './cart/cart';
 import Ppu from './ppu/ppu';
 
 const debug = Debug('nes:mmu');
-const blargg = Debug('nes:mmu:blargg');
+const test = Debug('nes:test');
 
 /**
  * Memory Map
@@ -99,9 +99,9 @@ export default class Mmu {
       case 0x6:
       case 0x7:
         if (addr < 0x6004) {
-          blargg('%s: %s', addr.to(16), val.to(16));
+          test('%s: %s', addr.to(16), val.to(16));
           if (addr == 0x6000 && val != 0x80 && val > 0) {
-            blargg('invalid result code: %s', val.to(16));
+            test('invalid result code: %s', val.to(16));
             process.exit(1);
           }
         } else {
