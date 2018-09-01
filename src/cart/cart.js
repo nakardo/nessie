@@ -1,5 +1,5 @@
 import {debug as Debug} from 'debug';
-import MAPPERS from './mappers/mappers';
+import MAPPERS from './mappers';
 
 const debug = Debug('nes:cart');
 
