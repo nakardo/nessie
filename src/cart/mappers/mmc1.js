@@ -1,3 +1,4 @@
+import Mapper from './mapper';
 import {UnmappedAddressError} from '../../errors';
 
 /**
@@ -117,18 +118,8 @@ import {UnmappedAddressError} from '../../errors';
  *           by writing bit 7 of the register. Note that MMC1 only has one
  *           5-bit array for this data, not a separate one for each register.
  */
-export default class MMC1 {
-  rom = null;
-  ram = null;
-  romBank0 = 0;
-  romBank1 = 0;
+export default class MMC1 extends Mapper {
   register = 0b10000;
-
-  constructor({rom, ram}) {
-    this.rom = rom;
-    this.ram = ram;
-    this.romBank1 = this.rom.length - 1;
-  }
 
   reset() {
     this.register = 0b10000;
