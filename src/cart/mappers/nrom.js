@@ -1,30 +1,31 @@
 import {UnmappedAddressError} from '../../errors';
 
 export default class NROM {
-  romBank0 = 0;
+  rom = null;
+  ram = null;
   romBank1 = 0;
 
-  constructor(cart) {
-    this.cart = cart;
-    this.romBank0 = 0;
-    this.romBank1 = this.cart.rom.length - 1;
+  constructor({rom, ram}) {
+    this.rom = rom;
+    this.ram = ram;
+    this.romBank1 = this.rom.length - 1;
   }
 
   r8(addr) {
     switch (addr >> 12) {
       case 0x6:
       case 0x7:
-        return this.cart.ram[addr & 0x1fff];
+        return this.ram[addr & 0x1fff];
       case 0x8:
       case 0x9:
       case 0xa:
       case 0xb:
-        return this.cart.rom[this.romBank0][addr & 0x3fff];
+        return this.rom[0][addr & 0x3fff];
       case 0xc:
       case 0xd:
       case 0xe:
       case 0xf:
-        return this.cart.rom[this.romBank1][addr & 0x3fff];
+        return this.rom[this.romBank1][addr & 0x3fff];
       default:
         break;
     }
@@ -35,7 +36,7 @@ export default class NROM {
     switch (addr >> 12) {
       case 0x6:
       case 0x7:
-        this.cart.ram[addr & 0x1fff] = val;
+        this.ram[addr & 0x1fff] = val;
         return;
       default:
         break;

@@ -1,4 +1,3 @@
-import NROM from './nrom';
 import {UnmappedAddressError} from '../../errors';
 
 /**
@@ -118,12 +117,17 @@ import {UnmappedAddressError} from '../../errors';
  *           by writing bit 7 of the register. Note that MMC1 only has one
  *           5-bit array for this data, not a separate one for each register.
  */
-export default class MMC1 extends NROM {
-  register = 0;
+export default class MMC1 {
+  rom = null;
+  ram = null;
+  romBank0 = 0;
+  romBank1 = 0;
+  register = 0b10000;
 
-  constructor(cart) {
-    super(cart);
-    this.reset();
+  constructor({rom, ram}) {
+    this.rom = rom;
+    this.ram = ram;
+    this.romBank1 = this.rom.length - 1;
   }
 
   reset() {
@@ -147,11 +151,32 @@ export default class MMC1 extends NROM {
     }
   }
 
+  r8(addr) {
+    switch (addr >> 12) {
+      case 0x6:
+      case 0x7:
+        return this.ram[addr & 0x1fff];
+      case 0x8:
+      case 0x9:
+      case 0xa:
+      case 0xb:
+        return this.rom[this.romBank0][addr & 0x3fff];
+      case 0xc:
+      case 0xd:
+      case 0xe:
+      case 0xf:
+        return this.rom[this.romBank1][addr & 0x3fff];
+      default:
+        break;
+    }
+    throw new UnmappedAddressError(addr);
+  }
+
   w8({val, addr}) {
     switch (addr >> 12) {
       case 0x6:
       case 0x7:
-        super.w8({val, addr});
+        this.ram[addr & 0x1fff] = val;
         return;
       case 0x8:
       case 0x9:
