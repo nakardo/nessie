@@ -3,6 +3,8 @@
 import {debug as Debug} from 'debug';
 import MAPPERS from './mappers/mappers';
 
+const debug = Debug('nes:cart');
+
 export default class Cart {
   mapper = null;
 
@@ -14,5 +16,13 @@ export default class Cart {
     debug('Mapper #: %d', mapper);
 
     this.mapper = new (MAPPERS[mapper])(data);
+  }
+
+  r8(addr) {
+    return this.mapper.r8(addr);
+  }
+
+  w8({val, addr}) {
+    return this.mapper.w8({val, addr});
   }
 }
