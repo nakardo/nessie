@@ -1,5 +1,9 @@
 # Documentation
 
+## General
+- https://raw.githubusercontent.com/ahefner/tenes/master/tech/nestech.txt
+- http://problemkaputt.de/everynes.txt
+
 ## Illegal opcodes
 - https://github.com/eteran/pretendo/blob/master/doc/cpu/6502.txt
 - http://oxyron.de/html/opcodes02.html
