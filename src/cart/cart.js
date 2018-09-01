@@ -33,7 +33,7 @@ export default class Cart {
       pages: romPagesCount,
       size: 0x4000,
     });
-    this.mapper = new Mapper({rom: this.rom, ram: this.ram});
+    this.mapper = new Mapper(this);
 
     // TODO(nakardo): pull CHR-ROM data here.
   }
