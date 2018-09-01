@@ -1,7 +1,7 @@
 import './util';
 import {debug as Debug} from 'debug';
 import Cpu from './6502/cpu';
-import Mmu from './mmu/mmu';
+import Mmu from './mmu';
 
 const debug = Debug('nes');
 

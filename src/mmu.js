@@ -1,8 +1,8 @@
 import assert from 'assert';
 import {debug as Debug} from 'debug';
-import {UnmappedAddressError} from '../errors';
-import Ppu from '../ppu/ppu';
-import MAPPERS from './mappers/mappers';
+import {UnmappedAddressError} from './errors';
+import Cart from './cart/cart'
+import Ppu from './ppu/ppu';
 
 const debug = Debug('nes:mmu');
 
@@ -29,19 +29,13 @@ const debug = Debug('nes:mmu');
  *                         (e.g. $2008=$2000, $2018=$2000, etc.)
  */
 export default class Mmu {
+  cart = null;
   ram = new Uint8Array(0x800);
   ppu = new Ppu();
   exrom = new Uint8Array(0x1fe0);
-  mapper = null;
 
-  loadCart(cart) {
-    const mapper = ((cart[6] >> 4) | cart[7] & 0xf0);
-
-    debug('ROM Control Byte #1: %s', cart[6].to(2));
-    debug('ROM Control Byte #2: %s', cart[7].to(2));
-    debug('Mapper #: %d', mapper);
-
-    this.mapper = new (MAPPERS[mapper])(cart);
+  loadCart(data) {
+    this.cart = new Cart(data)
   }
 
   r8(addr) {
@@ -64,7 +58,7 @@ export default class Mmu {
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        return this.mapper.r8(addr);
+        return this.cart.r8(addr);
       default: break;
     }
     throw new UnmappedAddressError(addr);
@@ -96,13 +90,13 @@ export default class Mmu {
         } else {
           process.stdout.write(String.fromCharCode(val));
         }
-        this.mapper.w8({val, addr});
+        this.cart.w8({val, addr});
         return;
       case 0x8: case 0x9:
       case 0xa: case 0xb:
       case 0xc: case 0xd:
       case 0xe: case 0xf:
-        this.mapper.w8({val, addr});
+        this.cart.w8({val, addr});
         return;
       default: break;
     }
