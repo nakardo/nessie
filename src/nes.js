@@ -2,6 +2,7 @@ import './number';
 import {debug as Debug} from 'debug';
 import Cpu from './6502/cpu';
 import Mmu from './mmu';
+import Cart from './cart/cart';
 
 const debug = Debug('nes');
 
@@ -10,7 +11,8 @@ export default class Nes {
   cpu = new Cpu(this.mmu);
 
   loadCart(buf) {
-    this.mmu.loadCart(Uint8Array.from(buf));
+    debug('loading cart');
+    this.mmu.cart = new Cart(Uint8Array.from(buf));
   }
 
   start() {

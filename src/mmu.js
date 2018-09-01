@@ -1,7 +1,6 @@
 import assert from 'assert';
 import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from './errors';
-import Cart from './cart/cart';
 import Ppu from './ppu/ppu';
 
 const debug = Debug('nes:mmu');
@@ -34,10 +33,6 @@ export default class Mmu {
   ram = new Uint8Array(0x800);
   ppu = new Ppu();
   exrom = new Uint8Array(0x1fe0);
-
-  loadCart(data) {
-    this.cart = new Cart(data);
-  }
 
   r8(addr) {
     assert.ok(typeof addr === 'number', 'invalid address');
