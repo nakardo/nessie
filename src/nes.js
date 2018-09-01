@@ -1,4 +1,4 @@
-import './util';
+import './number';
 import {debug as Debug} from 'debug';
 import Cpu from './6502/cpu';
 import Mmu from './mmu';
