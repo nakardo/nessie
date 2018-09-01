@@ -1,6 +1,6 @@
 import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from '../errors';
-import * as PPU from './registers'
+import * as PPU from './registers';
 
 const debug = Debug('nes:ppu');
 
@@ -49,7 +49,7 @@ export default class Ppu {
   r8(addr) {
     debug('read at: %s', addr.to(16, 2));
 
-    switch (0x2000 | addr & 7) {
+    switch (0x2000 | (addr & 7)) {
       case PPU.STAT:
         this.stat &= ~(1 << 7);
         this.ffword ^= 1;
@@ -62,7 +62,8 @@ export default class Ppu {
         this.vramaddr &= 0x3fff;
         return val;
       }
-      default: break;
+      default:
+        break;
     }
     throw new UnmappedAddressError(addr);
   }
@@ -71,7 +72,7 @@ export default class Ppu {
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
     val &= 0xff;
-    switch (0x2000 | addr & 7) {
+    switch (0x2000 | (addr & 7)) {
       case PPU.CTRL1:
         this.ctrl1 = val;
         return;
@@ -105,8 +106,9 @@ export default class Ppu {
         this.vramaddr &= 0x3fff;
         return;
       }
-      default: break;
+      default:
+        break;
     }
     throw new UnmappedAddressError(addr);
   }
-};
+}

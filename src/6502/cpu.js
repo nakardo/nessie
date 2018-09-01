@@ -52,7 +52,7 @@ export default class Cpu {
   }
 
   pull16() {
-    return this.pull8() | this.pull8() << 8;
+    return this.pull8() | (this.pull8() << 8);
   }
 
   sign(val) {
@@ -200,19 +200,19 @@ export default class Cpu {
       case MODE.IND: {
         const laddr = this.mmu.r16(operand);
         const haddr = (laddr & 0xff00) | ((laddr + 1) & 0xff);
-        addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
+        addr = this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8);
         break;
       }
       case MODE.IDX_IND: {
         const laddr = (this.mmu.r8(operand) + this.x) & 0xff;
         const haddr = (laddr + 1) & 0xff;
-        addr = this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8;
+        addr = this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8);
         break;
       }
       case MODE.IND_IDX: {
         const laddr = this.mmu.r8(operand);
         const haddr = (laddr + 1) & 0xff;
-        addr = (this.mmu.r8(laddr) | this.mmu.r8(haddr) << 8) + this.y;
+        addr = (this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8)) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       }
@@ -234,4 +234,4 @@ export default class Cpu {
 
     execute({...inst, cpu: this, mmu: this.mmu, addr, operand});
   }
-};
+}

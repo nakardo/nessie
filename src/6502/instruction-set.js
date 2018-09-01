@@ -1,3 +1,4 @@
+// prettier-ignore
 import {
   // official
   adc, and, asl, bcc, bcs, beq, bit, bmi, bne, bpl, brk, bvc, bvs, clc, cld,
@@ -9,6 +10,7 @@ import {
   shx, shy, xaa, tas
 } from './instructions';
 
+// prettier-ignore
 const execute = [
   brk, ora, stp, slo, nop, ora, asl, slo, php, ora, asl, anc, nop, ora, asl, slo,
   bpl, ora, stp, slo, nop, ora, asl, slo, clc, ora, nop, slo, nop, ora, asl, slo,
@@ -28,6 +30,7 @@ const execute = [
   beq, sbc, stp, isc, nop, sbc, inc, isc, sed, sbc, nop, isc, nop, sbc, inc, isc,
 ];
 
+// prettier-ignore
 const mode = [
   6,  7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 1, 1, 1, 1,
   10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
@@ -47,6 +50,7 @@ const mode = [
   10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
 ];
 
+// prettier-ignore
 const bytes = [
   1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,
   2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
@@ -66,6 +70,7 @@ const bytes = [
   2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,
 ];
 
+// prettier-ignore
 const cycles = [
   7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,
   2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
@@ -85,6 +90,7 @@ const cycles = [
   2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
 ];
 
+// prettier-ignore
 const branchCycles = [
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0,
@@ -104,13 +110,11 @@ const branchCycles = [
   1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0,
 ];
 
-export default (new Array(0x100))
-  .fill(null)
-  .map((_, i) => ({
-    opcode: i,
-    execute: execute[i],
-    mode: mode[i],
-    bytes: bytes[i],
-    cycles: cycles[i],
-    branchCycles: branchCycles[i],
-  }));
+export default new Array(0x100).fill(null).map((_, i) => ({
+  opcode: i,
+  execute: execute[i],
+  mode: mode[i],
+  bytes: bytes[i],
+  cycles: cycles[i],
+  branchCycles: branchCycles[i],
+}));

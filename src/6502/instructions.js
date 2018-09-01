@@ -42,35 +42,38 @@ function addWithCarry({cpu}, val) {
   const res = cpu.a + val + (cpu.carry() ? 1 : 0);
   cpu.zero(res);
   cpu.sign(res);
-  cpu.overflow((~(cpu.a ^ val)) & (cpu.a ^ res) & 0x80);
+  cpu.overflow(~(cpu.a ^ val) & (cpu.a ^ res) & 0x80);
   cpu.carry(res > 0xff);
   cpu.a = res & 0xff;
 }
 
-const andWithHighByte = ({reg, idx}) => function andhb({cpu, mmu, operand}) {
-  let addr = mmu.r16(operand);
-  const haddr = addr >> 8;
-  const laddr = addr & 0xff;
-  if ((laddr + cpu[idx]) > 0xff) {
-    addr = ((haddr & cpu[reg]) << 8) + laddr + cpu[idx];
-  } else {
-    addr = (haddr << 8) + laddr + cpu[idx];
-  }
+const andWithHighByte = ({reg, idx}) =>
+  function andhb({cpu, mmu, operand}) {
+    let addr = mmu.r16(operand);
+    const haddr = addr >> 8;
+    const laddr = addr & 0xff;
+    if (laddr + cpu[idx] > 0xff) {
+      addr = ((haddr & cpu[reg]) << 8) + laddr + cpu[idx];
+    } else {
+      addr = (haddr << 8) + laddr + cpu[idx];
+    }
 
-  const val = cpu[reg] & (haddr + 1);
-  mmu.w8({val, addr});
-};
+    const val = cpu[reg] & (haddr + 1);
+    mmu.w8({val, addr});
+  };
 
-const transfer = ({from, to}) => function transfer({cpu}) {
-  const val = cpu[from];
-  cpu.sign(val);
-  cpu.zero(val);
-  cpu[to] = val;
-};
+const transfer = ({from, to}) =>
+  function transfer({cpu}) {
+    const val = cpu[from];
+    cpu.sign(val);
+    cpu.zero(val);
+    cpu[to] = val;
+  };
 
-const combine = (...fns) => function combine({...inst}) {
-  fns.forEach(fn => fn(inst));
-}
+const combine = (...fns) =>
+  function combine({...inst}) {
+    fns.forEach(fn => fn(inst));
+  };
 
 function unknown({opcode}) {
   throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
@@ -414,7 +417,7 @@ export function clv({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export const cmp = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.a));
+export const cmp = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.a);
 
 /**
  * CPX                  CPX Compare Memory and Index X                   CPX
@@ -429,7 +432,7 @@ export const cmp = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.a));
  * |  Absolute      |   CPX Oper            |    EC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpx = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.x));
+export const cpx = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.x);
 
 /**
  * CPY                  CPY Compare memory and index Y                   CPY
@@ -444,7 +447,7 @@ export const cpx = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.x));
  * |  Absolute      |   CPY Oper            |    CC   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const cpy = ({cpu, ...inst}) => (compare({...inst, cpu}, cpu.y));
+export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
 
 /**
  * DEC                   DEC Decrement memory by one                     DEC
@@ -559,7 +562,6 @@ export function inx({cpu}) {
   cpu.x = increment({cpu}, cpu.x);
 }
 
-
 /**
  * INY                    INY Increment Index Y by one                   INY
  *
@@ -632,7 +634,7 @@ export function jsr({cpu, addr}) {
  */
 export function lda({cpu, ...inst}) {
   cpu.a = load({...inst, cpu});
-};
+}
 
 /**
  * LDX                   LDX Load index X with memory                    LDX
@@ -950,7 +952,7 @@ export function rts({cpu}) {
 export function sbc({cpu, mmu, addr}) {
   const val = mmu.r8(addr) ^ 0xff;
   addWithCarry({cpu}, val);
-};
+}
 
 /**
  * SEC                        SEC Set carry flag                         SEC

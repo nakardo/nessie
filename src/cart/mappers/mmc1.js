@@ -1,8 +1,5 @@
-import {debug as Debug} from 'debug';
 import NROM from './nrom';
 import {UnmappedAddressError} from '../../errors';
-
-const debug = Debug('nes:mapper:mmc1');
 
 /**
  * +----------------+
@@ -152,13 +149,18 @@ export default class MMC1 extends NROM {
 
   w8({val, addr}) {
     switch (addr >> 12) {
-      case 0x6: case 0x7:
+      case 0x6:
+      case 0x7:
         super.w8({val, addr});
         return;
-      case 0x8: case 0x9:
-      case 0xa: case 0xb:
-      case 0xc: case 0xd:
-      case 0xe: case 0xf:
+      case 0x8:
+      case 0x9:
+      case 0xa:
+      case 0xb:
+      case 0xc:
+      case 0xd:
+      case 0xe:
+      case 0xf:
         if (val & 0x80) {
           this.reset();
         } else if (this.register & 1) {
@@ -170,7 +172,8 @@ export default class MMC1 extends NROM {
           this.shift(val);
         }
         return;
-      default: break;
+      default:
+        break;
     }
     throw new UnmappedAddressError(addr);
   }
