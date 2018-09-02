@@ -4,7 +4,8 @@ export default class Mapper {
   prgRom = null;
   chrRom = null;
   prgRam = null;
-  chrRomBank = 0;
+  chrRomBank0 = 0;
+  chrRomBank1 = 0;
   prgRomBank0 = 0;
   prgRomBank1 = 0;
 
