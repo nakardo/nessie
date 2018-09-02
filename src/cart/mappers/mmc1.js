@@ -119,20 +119,20 @@ import {UnmappedAddressError} from '../../errors';
  *           5-bit array for this data, not a separate one for each register.
  */
 export default class MMC1 extends Mapper {
-  register = 0b10000;
+  shift = 0b10000;
 
-  reset() {
-    this.register = 0b10000;
+  shiftReset() {
+    this.shift = 0b10000;
   }
 
-  shift(val) {
-    this.register >>= 1;
-    this.register |= (val & 1) << 4;
+  shiftRight(val) {
+    this.shift >>= 1;
+    this.shift |= (val & 1) << 4;
   }
 
   updateBankMode(val) {
     this.romBank0 = 0;
-    const mode = (this.register >> 2) & 3;
+    const mode = (this.shift >> 2) & 3;
     if (mode == 0 || mode == 1) {
       this.romBank0 = val & 0xfe;
     } else {
@@ -178,14 +178,14 @@ export default class MMC1 extends Mapper {
       case 0xe:
       case 0xf:
         if (val & 0x80) {
-          this.reset();
-        } else if (this.register & 1) {
-          this.shift(val);
+          this.shiftReset();
+        } else if (this.shift & 1) {
+          this.shiftRight(val);
           const select = (addr >> 13) & 3;
           if (select == 0) this.updateBankMode(val);
-          this.reset();
+          this.shiftReset();
         } else {
-          this.shift(val);
+          this.shiftRight(val);
         }
         return;
       default:
