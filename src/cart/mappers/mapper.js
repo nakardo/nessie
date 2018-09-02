@@ -9,7 +9,8 @@ export default class Mapper {
   constructor({rom, ram}) {
     this.rom = rom;
     this.ram = ram;
-    this.romBank1 = this.rom.length - 1;
+    this.romLastPage = this.rom.length - 1;
+    this.romBank1 = this.romLastPage;
   }
 
   r8(addr) {

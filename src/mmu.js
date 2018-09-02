@@ -44,7 +44,8 @@ export default class Mmu {
         return this.ram[addr & 0x7ff];
       case 0x2:
       case 0x3:
-        return this.ppu.r8(addr);
+        // return this.ppu.r8(addr);
+        break;
       case 0x4:
       case 0x5:
         addr &= 0x1fff;
@@ -84,8 +85,9 @@ export default class Mmu {
         return;
       case 0x2:
       case 0x3:
-        this.ppu.w8({val, addr});
-        return;
+        // this.ppu.w8({val, addr});
+        // return;
+        break;
       case 0x4:
       case 0x5:
         if (addr < 0x20) {

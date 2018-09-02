@@ -119,6 +119,7 @@ import {UnmappedAddressError} from '../../errors';
  *           5-bit array for this data, not a separate one for each register.
  */
 export default class MMC1 extends Mapper {
+  control = 0;
   shift = 0b10000;
 
   shiftReset() {
@@ -130,15 +131,18 @@ export default class MMC1 extends Mapper {
     this.shift |= (val & 1) << 4;
   }
 
-  updateBankMode(val) {
-    this.romBank0 = 0;
-    const mode = (this.shift >> 2) & 3;
+  selectPrgRomBank(bank) {
+    const mode = (this.control >> 2) & 3;
     if (mode == 0 || mode == 1) {
-      this.romBank0 = val & 0xfe;
+      this.romBank0 = bank & 0xe;
     } else {
-      this.romBank1 = 0;
-      if (mode == 2) this.romBank1 = val;
-      else this.romBank0 = val;
+      if (mode == 2) {
+        this.romBank0 = 0;
+        this.romBank1 = bank;
+      } else {
+        this.romBank0 = bank;
+        this.romBank1 = this.romLastPage;
+      }
     }
   }
 
@@ -164,33 +168,36 @@ export default class MMC1 extends Mapper {
   }
 
   w8({val, addr}) {
-    switch (addr >> 12) {
-      case 0x6:
-      case 0x7:
-        this.ram[addr & 0x1fff] = val;
+    const nib = addr >> 12;
+    if (nib > 0x8) {
+      if (val & 0x80) {
+        this.shiftReset();
         return;
-      case 0x8:
-      case 0x9:
-      case 0xa:
-      case 0xb:
-      case 0xc:
-      case 0xd:
-      case 0xe:
-      case 0xf:
-        if (val & 0x80) {
-          this.shiftReset();
-        } else if (this.shift & 1) {
-          this.shiftRight(val);
-          const select = (addr >> 13) & 3;
-          if (select == 0) this.updateBankMode(val);
-          this.shiftReset();
-        } else {
-          this.shiftRight(val);
-        }
+      }
+      if ((this.shift & 1) == 0) {
+        this.shiftRight(val);
         return;
-      default:
-        break;
+      }
+      this.shiftRight(val);
+      switch (nib) {
+        case 0x8:
+        case 0x9:
+          this.control = val & 0x1f;
+          break;
+        case 0xe:
+        case 0xf:
+          this.selectPrgRomBank(this.shift & 0xf);
+          break;
+        default:
+          throw new UnmappedAddressError(addr);
+      }
+      this.shiftReset();
+      return;
+    } else if (nib > 0x6) {
+      this.ram[addr & 0x1fff] = val;
+      return;
     }
+
     throw new UnmappedAddressError(addr);
   }
 }
