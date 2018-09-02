@@ -1,5 +1,8 @@
 import Mapper from './mapper';
+import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from '../../errors';
+
+const debug = Debug('nes:mapper');
 
 /**
  * +----------------+
@@ -133,9 +136,11 @@ export default class MMC1 extends Mapper {
 
   selectPrgRomBank(bank) {
     const mode = (this.control >> 2) & 3;
+    debug('change to bank: %s, using mode: %d', bank.to(16), mode);
+
     if (mode == 0 || mode == 1) {
       // TODO(nakardo): check mode to ignore low bit.
-      this.prgRomBank[0] = bank & 0xe;
+      this.prgRomBank[0] = bank;
     } else {
       if (mode == 2) {
         this.prgRomBank[0] = 0;
@@ -167,12 +172,12 @@ export default class MMC1 extends Mapper {
         case 0xa:
         case 0xb:
           // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank[0] = this.shift & 0xe;
+          this.chrRomBank[0] = this.shift;
           break;
         case 0xc:
         case 0xd:
           // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank[1] = this.shift & 0xe;
+          this.chrRomBank[1] = this.shift;
           break;
         case 0xe:
         case 0xf:
