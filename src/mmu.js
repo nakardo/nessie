@@ -54,6 +54,7 @@ export default class Mmu {
         return this.exrom[addr - 0x20];
       case 0x6:
       case 0x7:
+        break;
       case 0x8:
       case 0x9:
       case 0xa:
