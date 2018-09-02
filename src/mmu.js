@@ -45,7 +45,7 @@ export default class Mmu {
       case 0x2:
       case 0x3:
         // return this.ppu.r8(addr);
-        break;
+        return 0;
       case 0x4:
       case 0x5:
         addr &= 0x1fff;
@@ -55,7 +55,6 @@ export default class Mmu {
         return this.exrom[addr - 0x20];
       case 0x6:
       case 0x7:
-        break;
       case 0x8:
       case 0x9:
       case 0xa:
@@ -86,8 +85,7 @@ export default class Mmu {
       case 0x2:
       case 0x3:
         // this.ppu.w8({val, addr});
-        // return;
-        break;
+        return;
       case 0x4:
       case 0x5:
         if (addr < 0x20) {
