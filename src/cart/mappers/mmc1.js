@@ -149,7 +149,7 @@ export default class MMC1 extends Mapper {
 
   w8({val, addr}) {
     const nib = addr >> 12;
-    if (nib > 0x8) {
+    if (nib >= 0x8) {
       if (val & 0x80) {
         this.shiftReset();
         return;
@@ -183,7 +183,7 @@ export default class MMC1 extends Mapper {
       }
       this.shiftReset();
       return;
-    } else if (nib > 0x6) {
+    } else if (nib >= 0x6) {
       this.prgRam[addr & 0x1fff] = val;
       return;
     }
