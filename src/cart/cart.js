@@ -3,9 +3,13 @@ import MAPPERS from './mappers';
 
 const debug = Debug('nes:cart');
 
+const PRG_ROM_PAGE_SIZE = 0x4000;
+const CHR_ROM_PAGE_SIZE = 0x2000;
+
 export default class Cart {
-  ram = new Uint8Array(0x2000); // SRAM
-  rom = null; // PRG-ROM
+  prgRom = null;
+  chrRom = null;
+  prgRam = new Uint8Array(0x2000);
   mapper = null;
 
   static createMemory({data, pages, size}) {
@@ -16,26 +20,31 @@ export default class Cart {
   }
 
   constructor(data) {
-    const romPagesCount = data[4];
+    const prgRomPagesCount = data[4];
+    const chrRomPagesCount = data[5];
+
     const mapper = (data[6] >> 4) | (data[7] & 0xf0);
     const Mapper = MAPPERS[mapper];
 
     // Header data
 
     debug('mapper index: %d, uses: %s', mapper, Mapper.name);
-    debug('prg-rom pages: %d', romPagesCount);
-    debug('chr-rom pages: %d', data[5]);
+    debug('prg-rom pages: %d', prgRomPagesCount);
+    debug('chr-rom pages: %d', chrRomPagesCount);
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
-    this.rom = Cart.createMemory({
-      data: data.slice(16), // Cart data without headers.
-      pages: romPagesCount,
-      size: 0x4000,
+    this.prgRom = Cart.createMemory({
+      data: data.slice(16),
+      pages: prgRomPagesCount,
+      size: PRG_ROM_PAGE_SIZE,
+    });
+    this.chrRom = Cart.createMemory({
+      data: data.slice(16 + PRG_ROM_PAGE_SIZE * prgRomPagesCount),
+      pages: chrRomPagesCount,
+      size: CHR_ROM_PAGE_SIZE,
     });
     this.mapper = new Mapper(this);
-
-    // TODO(nakardo): pull CHR-ROM data here.
   }
 
   r8(addr) {

@@ -134,37 +134,16 @@ export default class MMC1 extends Mapper {
   selectPrgRomBank(bank) {
     const mode = (this.control >> 2) & 3;
     if (mode == 0 || mode == 1) {
-      this.romBank0 = bank & 0xe;
+      this.prgRomBank0 = bank & 0xe;
     } else {
       if (mode == 2) {
-        this.romBank0 = 0;
-        this.romBank1 = bank;
+        this.prgRomBank0 = 0;
+        this.prgRomBank1 = bank;
       } else {
-        this.romBank0 = bank;
-        this.romBank1 = this.romLastPage;
+        this.prgRomBank0 = bank;
+        this.prgRomBank1 = this.romLastPage;
       }
     }
-  }
-
-  r8(addr) {
-    switch (addr >> 12) {
-      case 0x6:
-      case 0x7:
-        return this.ram[addr & 0x1fff];
-      case 0x8:
-      case 0x9:
-      case 0xa:
-      case 0xb:
-        return this.rom[this.romBank0][addr & 0x3fff];
-      case 0xc:
-      case 0xd:
-      case 0xe:
-      case 0xf:
-        return this.rom[this.romBank1][addr & 0x3fff];
-      default:
-        break;
-    }
-    throw new UnmappedAddressError(addr);
   }
 
   w8({val, addr}) {
@@ -194,10 +173,9 @@ export default class MMC1 extends Mapper {
       this.shiftReset();
       return;
     } else if (nib > 0x6) {
-      this.ram[addr & 0x1fff] = val;
+      this.prgRam[addr & 0x1fff] = val;
       return;
     }
-
     throw new UnmappedAddressError(addr);
   }
 }
