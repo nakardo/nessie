@@ -182,7 +182,7 @@ export default class MMC1 extends Mapper {
       switch (nib) {
         case 0x8:
         case 0x9:
-          this.control = val & 0x1f;
+          this.control = this.shift;
           break;
         case 0xe:
         case 0xf:
