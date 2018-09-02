@@ -139,8 +139,7 @@ export default class MMC1 extends Mapper {
     debug('change to bank: %s, using mode: %d', bank.to(16), mode);
 
     if (mode == 0 || mode == 1) {
-      // TODO(nakardo): check mode to ignore low bit.
-      this.prgRomBank[0] = bank;
+      this.prgRomBank[0] = bank & 0xe;
     } else {
       if (mode == 2) {
         this.prgRomBank[0] = 0;
@@ -182,6 +181,7 @@ export default class MMC1 extends Mapper {
           break;
         case 0xe:
         case 0xf:
+          // TODO(nakardo): check also 5th bit for PRG-RAM disable.
           this.selectPrgRomBank(this.shift & 0xf);
           break;
         default:
