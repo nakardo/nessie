@@ -135,14 +135,14 @@ export default class MMC1 extends Mapper {
     const mode = (this.control >> 2) & 3;
     if (mode == 0 || mode == 1) {
       // TODO(nakardo): check mode to ignore low bit.
-      this.prgRomBank0 = bank & 0xe;
+      this.prgRomBank[0] = bank & 0xe;
     } else {
       if (mode == 2) {
-        this.prgRomBank0 = 0;
-        this.prgRomBank1 = bank;
+        this.prgRomBank[0] = 0;
+        this.prgRomBank[1] = bank;
       } else {
-        this.prgRomBank0 = bank;
-        this.prgRomBank1 = this.romLastPage;
+        this.prgRomBank[0] = bank;
+        this.prgRomBank[1] = this.prgRomLastPage;
       }
     }
   }
@@ -167,12 +167,12 @@ export default class MMC1 extends Mapper {
         case 0xa:
         case 0xb:
           // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank0 = this.shift & 0xe;
+          this.chrRomBank[0] = this.shift & 0xe;
           break;
         case 0xc:
         case 0xd:
           // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank1 = this.shift & 0xe;
+          this.chrRomBank[1] = this.shift & 0xe;
           break;
         case 0xe:
         case 0xf:

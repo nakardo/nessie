@@ -4,18 +4,15 @@ export default class Mapper {
   prgRom = null;
   chrRom = null;
   prgRam = null;
-  chrRomBank0 = 0;
-  chrRomBank1 = 0;
-  prgRomBank0 = 0;
-  prgRomBank1 = 0;
+  chrRomBank = [0, 0];
+  prgRomBank = [0, 0];
 
   constructor({prgRom, chrRom, prgRam}) {
     this.prgRom = prgRom;
     this.chrRom = chrRom;
     this.prgRam = prgRam;
 
-    this.prgRomLastPage = this.prgRom.length - 1;
-    this.prgRomBank1 = this.prgRomLastPage;
+    this.prgRomBank[1] = this.prgRomLastPage = prgRom.length - 1;
   }
 
   w8({val, addr}) {
@@ -38,13 +35,17 @@ export default class Mapper {
       case 0x8:
       case 0x9:
       case 0xa:
-      case 0xb:
-        return this.prgRom[this.prgRomBank0][addr & 0x3fff];
+      case 0xb: {
+        const bank = this.prgRomBank[0];
+        return this.prgRom[bank][addr & 0x3fff];
+      }
       case 0xc:
       case 0xd:
       case 0xe:
-      case 0xf:
-        return this.prgRom[this.prgRomBank1][addr & 0x3fff];
+      case 0xf: {
+        const bank = this.prgRomBank[1];
+        return this.prgRom[bank][addr & 0x3fff];
+      }
       default:
         break;
     }
