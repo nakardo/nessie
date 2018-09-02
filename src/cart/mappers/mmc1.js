@@ -157,6 +157,7 @@ export default class MMC1 extends Mapper {
     if (nib >= 0x8) {
       if (val & 0x80) {
         this.shiftReset();
+        this.control |= 0xc;
         return;
       }
       if ((this.shift & 1) == 0) {
