@@ -88,10 +88,11 @@ export default class Mmu {
         return;
       case 0x4:
       case 0x5:
+        addr &= 0x1fff;
         if (addr < 0x20) {
-          return;
+          return; // TODO(nakardo): update registers here?
         }
-        return;
+        break;
       case 0x6:
       case 0x7:
         if (addr < 0x6004) {
