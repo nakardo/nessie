@@ -169,7 +169,7 @@ export default class MMC1 extends Mapper {
         break;
       case 0xe:
       case 0xf:
-        // TODO(nakardo): check also 5th bit for PRG-RAM disable.
+        this.prgRamEnable = (this.shift & 0x10) === 0;
         this.selectPrgRomBank(this.shift & 0xf);
         break;
     }

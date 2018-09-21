@@ -4,6 +4,7 @@ export default class Mapper {
   prgRom = null;
   chrRom = null;
   prgRam = null;
+  prgRamEnable = true;
   chrRomBank = [0, 0];
   prgRomBank = [0, 0];
   prgRomLastPage = 0;
@@ -20,7 +21,9 @@ export default class Mapper {
     switch (addr >> 12) {
       case 0x6:
       case 0x7:
-        this.prgRam[addr & 0x1fff] = val;
+        if (this.prgRamEnable) {
+          this.prgRam[addr & 0x1fff] = val;
+        }
         return;
       default:
         break;
@@ -32,6 +35,9 @@ export default class Mapper {
     switch (addr >> 12) {
       case 0x6:
       case 0x7:
+        if (!this.prgRamEnable) {
+          return 0;
+        }
         return this.prgRam[addr & 0x1fff];
       case 0x8:
       case 0x9:
