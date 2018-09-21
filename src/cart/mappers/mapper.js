@@ -6,6 +6,7 @@ export default class Mapper {
   prgRam = null;
   chrRomBank = [0, 0];
   prgRomBank = [0, 0];
+  prgRomLastPage = 0;
 
   constructor({prgRom, chrRom, prgRam}) {
     this.prgRom = prgRom;

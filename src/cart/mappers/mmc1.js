@@ -1,6 +1,5 @@
 import Mapper from './mapper';
 import {debug as Debug} from 'debug';
-import {UnmappedAddressError} from '../../errors';
 
 const debug = Debug('nes:mapper');
 
@@ -139,15 +138,40 @@ export default class MMC1 extends Mapper {
     debug('change to bank: %s, using mode: %d', bank.to(16), mode);
 
     if (mode == 0 || mode == 1) {
-      this.prgRomBank[0] = bank & 0xe;
+      bank &= 0xe;
+      this.prgRomBank[0] = bank;
+      this.prgRomBank[1] = bank + 1;
+    } else if (mode == 2) {
+      this.prgRomBank[0] = 0;
+      this.prgRomBank[1] = bank;
     } else {
-      if (mode == 2) {
-        this.prgRomBank[0] = 0;
-        this.prgRomBank[1] = bank;
-      } else {
-        this.prgRomBank[0] = bank;
-        this.prgRomBank[1] = this.prgRomLastPage;
-      }
+      this.prgRomBank[0] = bank;
+      this.prgRomBank[1] = this.prgRomLastPage;
+    }
+  }
+
+  updateRegister(nib) {
+    debug('writing register: %s, val: %s', nib.to(16), this.shift.to(2));
+    switch (nib) {
+      case 0x8:
+      case 0x9:
+        this.control = this.shift;
+        break;
+      case 0xa:
+      case 0xb:
+        // TODO(nakardo): check mode to ignore low bit.
+        this.chrRomBank[0] = this.shift;
+        break;
+      case 0xc:
+      case 0xd:
+        // TODO(nakardo): check mode to ignore low bit.
+        this.chrRomBank[1] = this.shift;
+        break;
+      case 0xe:
+      case 0xf:
+        // TODO(nakardo): check also 5th bit for PRG-RAM disable.
+        this.selectPrgRomBank(this.shift & 0xf);
+        break;
     }
   }
 
@@ -157,42 +181,15 @@ export default class MMC1 extends Mapper {
       if (val & 0x80) {
         this.shiftReset();
         this.control |= 0xc;
-        return;
-      }
-      if ((this.shift & 1) == 0) {
+      } else if ((this.shift & 1) == 0) {
         this.shiftRight(val);
-        return;
+      } else {
+        this.shiftRight(val);
+        this.updateRegister(nib);
+        this.shiftReset();
       }
-      this.shiftRight(val);
-      switch (nib) {
-        case 0x8:
-        case 0x9:
-          this.control = this.shift;
-          break;
-        case 0xa:
-        case 0xb:
-          // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank[0] = this.shift;
-          break;
-        case 0xc:
-        case 0xd:
-          // TODO(nakardo): check mode to ignore low bit.
-          this.chrRomBank[1] = this.shift;
-          break;
-        case 0xe:
-        case 0xf:
-          // TODO(nakardo): check also 5th bit for PRG-RAM disable.
-          this.selectPrgRomBank(this.shift & 0xf);
-          break;
-        default:
-          throw new UnmappedAddressError(addr);
-      }
-      this.shiftReset();
-      return;
-    } else if (nib >= 0x6) {
-      this.prgRam[addr & 0x1fff] = val;
       return;
     }
-    throw new UnmappedAddressError(addr);
+    super.w8({val, addr});
   }
 }
