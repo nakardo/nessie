@@ -4,7 +4,7 @@ export default class Mapper {
   prgRom = null;
   chrRom = null;
   prgRam = null;
-  prgRamEnable = true;
+  prgRamEnable = false;
   chrRomBank = [0, 0];
   prgRomBank = [0, 0];
   prgRomLastPage = 0;
@@ -36,7 +36,7 @@ export default class Mapper {
       case 0x6:
       case 0x7:
         if (!this.prgRamEnable) {
-          return 0;
+          return 0xff;
         }
         return this.prgRam[addr & 0x1fff];
       case 0x8:

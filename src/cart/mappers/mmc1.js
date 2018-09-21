@@ -148,6 +148,7 @@ export default class MMC1 extends Mapper {
       this.prgRomBank[0] = bank;
       this.prgRomBank[1] = this.prgRomLastPage;
     }
+    console.log(this.prgRomBank[0], this.prgRomBank[1]);
   }
 
   updateRegister(nib) {
