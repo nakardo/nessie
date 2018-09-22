@@ -11,3 +11,4 @@
 ## Mappers
 - https://wiki.nesdev.com/w/index.php/MMC1
 - http://tuxnes.sourceforge.net/mappers-0.80.txt
+- http://nesdev.com/mmc1.txt
