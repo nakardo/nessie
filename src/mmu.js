@@ -36,89 +36,56 @@ export default class Mmu {
 
   r8(addr) {
     assert.ok(typeof addr === 'number', 'invalid address');
-
     addr &= 0xffff;
-    switch (addr >> 12) {
-      case 0x0:
-      case 0x1:
-        return this.ram[addr & 0x7ff];
-      case 0x2:
-      case 0x3:
-        // return this.ppu.r8(addr);
+
+    if (addr < 0x2000) {
+      return this.ram[addr & 0x7ff];
+    } else if (addr < 0x4000) {
+      return this.ppu.r8(addr);
+    } else if (addr < 0x6000) {
+      addr &= 0x1fff;
+      if (addr < 0x20) {
         return 0;
-      case 0x4:
-      case 0x5:
-        addr &= 0x1fff;
-        if (addr < 0x20) {
-          return 0;
-        }
-        return this.exrom[addr - 0x20];
-      case 0x6:
-      case 0x7:
-      case 0x8:
-      case 0x9:
-      case 0xa:
-      case 0xb:
-      case 0xc:
-      case 0xd:
-      case 0xe:
-      case 0xf:
-        return this.cart.r8(addr);
-      default:
-        break;
+      }
+      return this.exrom[addr - 0x20];
+    } else {
+      return this.cart.r8(addr);
     }
-    throw new UnmappedAddressError(addr);
   }
 
   w8({val, addr}) {
     assert.ok(typeof val === 'number', 'invalid value');
     assert.ok(typeof addr === 'number', 'invalid address');
-
     addr &= 0xffff;
+
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
-    switch (addr >> 12) {
-      case 0x0:
-      case 0x1:
-        this.ram[addr & 0x7ff] = val;
+    if (addr < 0x2000) {
+      this.ram[addr & 0x7ff] = val;
+      return;
+    } else if (addr < 0x4000) {
+      this.ppu.w8({val, addr});
+      return;
+    } else if (addr < 0x6000) {
+      addr &= 0x1fff;
+      // TODO(nakardo): update registers here?
+      if (addr < 0x20) {
         return;
-      case 0x2:
-      case 0x3:
-        // this.ppu.w8({val, addr});
-        return;
-      case 0x4:
-      case 0x5:
-        addr &= 0x1fff;
-        if (addr < 0x20) {
-          return; // TODO(nakardo): update registers here?
+      }
+    } else {
+      if (addr < 0x6004) {
+        test('%s: %s', addr.to(16), val.to(16));
+        if (addr == 0x6000 && val != 0x80 && val > 0) {
+          test('invalid result code: %s', val.to(16));
+          process.exit(1);
         }
-        break;
-      case 0x6:
-      case 0x7:
-        if (addr < 0x6004) {
-          test('%s: %s', addr.to(16), val.to(16));
-          if (addr == 0x6000 && val != 0x80 && val > 0) {
-            test('invalid result code: %s', val.to(16));
-            process.exit(1);
-          }
-        } else {
-          process.stdout.write(String.fromCharCode(val));
-        }
-        this.cart.w8({val, addr});
-        return;
-      case 0x8:
-      case 0x9:
-      case 0xa:
-      case 0xb:
-      case 0xc:
-      case 0xd:
-      case 0xe:
-      case 0xf:
-        this.cart.w8({val, addr});
-        return;
-      default:
-        break;
+      } else if (addr < 0x8000) {
+        process.stdout.write(String.fromCharCode(val));
+      }
+      this.cart.w8({val, addr});
+      return;
     }
+
     throw new UnmappedAddressError(addr);
   }
 
