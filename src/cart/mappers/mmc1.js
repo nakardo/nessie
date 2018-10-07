@@ -148,7 +148,6 @@ export default class MMC1 extends Mapper {
       this.prgRomBank[0] = bank;
       this.prgRomBank[1] = this.prgRomLastPage;
     }
-    console.log(this.prgRomBank[0], this.prgRomBank[1]);
   }
 
   updateRegister(nib) {
@@ -158,16 +157,16 @@ export default class MMC1 extends Mapper {
       case 0x9:
         this.control = this.shift;
         break;
-      // case 0xa:
-      // case 0xb:
-      //   // TODO(nakardo): check mode to ignore low bit.
-      //   this.chrRomBank[0] = this.shift;
-      //   break;
-      // case 0xc:
-      // case 0xd:
-      //   // TODO(nakardo): check mode to ignore low bit.
-      //   this.chrRomBank[1] = this.shift;
-      //   break;
+      case 0xa:
+      case 0xb:
+        // TODO(nakardo): check mode to ignore low bit.
+        this.chrRomBank[0] = this.shift;
+        break;
+      case 0xc:
+      case 0xd:
+        // TODO(nakardo): check mode to ignore low bit.
+        this.chrRomBank[1] = this.shift;
+        break;
       case 0xe:
       case 0xf:
         this.prgRamEnable = (this.shift & 0x10) === 0;
