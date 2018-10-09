@@ -8,13 +8,15 @@ export default class Ppu {
   ctrl1 = 0;
   ctrl2 = 0;
   stat = 0;
-  sprram = new Uint8Array(0x100);
-  sprramaddr = 0;
-  sprramdata = 0;
-  bgoffset = 0;
+  bgOffset = 0;
+
+  sprRam = new Uint8Array(0x100);
+  sprRamAddr = 0;
+  sprRamData = 0;
+
   vram = new Uint8Array(0x4000);
-  vramaddr = 0;
-  vramdata = 0;
+  vramAddr = 0;
+  vramData = 0;
 
   /**
    * 1st/2nd Write
@@ -55,11 +57,11 @@ export default class Ppu {
         this.ffword ^= 1;
         return this.stat;
       case PPU.SPR_RAM_DATA:
-        return this.sprram[this.sprramaddr];
+        return this.sprRam[this.sprRamAddr];
       case PPU.VRAM_DATA: {
-        const val = this.vram[this.vramaddr];
-        this.vramaddr += this.vramAccessIncrement();
-        this.vramaddr &= 0x3fff;
+        const val = this.vram[this.vramAddr];
+        this.vramAddr += this.vramAccessIncrement();
+        this.vramAddr &= 0x3fff;
         return val;
       }
       default:
@@ -80,32 +82,31 @@ export default class Ppu {
         this.ctrl2 = val;
         return;
       case PPU.SPR_RAM_ADDR:
-        this.sprramaddr = val;
+        this.sprRamAddr = val;
         return;
       case PPU.SPR_RAM_DATA:
-        this.sprram[this.sprramaddr++] = val;
-        this.sprramaddr &= 0xff;
+        this.sprRam[this.sprRamAddr++] = val;
+        this.sprRamAddr &= 0xff;
         return;
       case PPU.BG_SCROLL_OFFSET: {
         const offset = 8 * this.ffword;
-        this.bgoffset &= ~(0xff << offset);
-        this.bgoffset |= val << offset;
+        this.bgOffset &= ~(0xff << offset);
+        this.bgOffset |= val << offset;
         this.ffword ^= 1;
         return;
       }
       case PPU.VRAM_ADDR: {
         const offset = 8 * this.ffword;
-        this.vramaddr &= ~(0xff << offset);
-        this.vramaddr |= val << offset;
+        this.vramAddr &= ~(0xff << offset);
+        this.vramAddr |= val << offset;
         this.ffword ^= 1;
         return;
       }
-      case PPU.VRAM_DATA: {
-        this.vram[this.vramaddr] = val;
-        this.vramaddr += this.vramAccessIncrement();
-        this.vramaddr &= 0x3fff;
+      case PPU.VRAM_DATA:
+        this.vram[this.vramAddr] = val;
+        this.vramAddr += this.vramAccessIncrement();
+        this.vramAddr &= 0x3fff;
         return;
-      }
       default:
         break;
     }
