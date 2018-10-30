@@ -48,9 +48,11 @@ export default class Mmu {
         return 0;
       }
       return this.exrom[addr - 0x20];
-    } else {
+    } else if (addr <= 0xffff) {
       return this.cart.r8(addr);
     }
+
+    throw new UnmappedAddressError(addr);
   }
 
   w8({val, addr}) {
