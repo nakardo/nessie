@@ -32,24 +32,26 @@ export default class Mmu {
   cart = null;
   ram = new Uint8Array(0x800);
   ppu = new Ppu();
-  exrom = new Uint8Array(0x1fe0);
+  apu = new Uint8Array(0x18);
 
   r8(addr) {
     assert.ok(typeof addr === 'number', 'invalid address');
     addr &= 0xffff;
 
-    if (addr < 0x2000) {
-      return this.ram[addr & 0x7ff];
-    } else if (addr < 0x4000) {
-      return this.ppu.r8(addr);
-    } else if (addr < 0x6000) {
-      addr &= 0x1fff;
-      if (addr < 0x20) {
-        return 0;
-      }
-      return this.exrom[addr - 0x20];
-    } else if (addr <= 0xffff) {
-      return this.cart.r8(addr);
+    switch (addr >> 12) {
+      case 0x0:
+      case 0x1:
+        return this.ram[addr & 0x7ff];
+      case 0x2:
+      case 0x3:
+        return this.ppu.r8(addr);
+      default:
+        if (addr < 0x4018) {
+          return this.apu[addr & 0x1f];
+        } else if (addr < 0x4020) {
+          return 0;
+        }
+        return this.cart.r8(addr);
     }
 
     throw new UnmappedAddressError(addr);
@@ -62,30 +64,32 @@ export default class Mmu {
 
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
 
-    if (addr < 0x2000) {
-      this.ram[addr & 0x7ff] = val;
-      return;
-    } else if (addr < 0x4000) {
-      this.ppu.w8({val, addr});
-      return;
-    } else if (addr < 0x6000) {
-      addr &= 0x1fff;
-      // TODO(nakardo): update registers here?
-      if (addr < 0x20) {
+    switch (addr >> 12) {
+      case 0x0:
+      case 0x1:
+        this.ram[addr & 0x7ff] = val;
         return;
-      }
-    } else {
-      if (addr < 0x6004) {
-        test('%s: %s', addr.to(16), val.to(16));
-        if (addr == 0x6000 && val != 0x80 && val > 0) {
-          test('invalid result code: %s', val.to(16));
-          process.exit(1);
+      case 0x2:
+      case 0x3:
+        this.ppu.w8({val, addr});
+        return;
+      default:
+        if (addr < 0x4018) {
+          this.apu[addr & 0x1f] = val;
+          return;
+        } else if (addr < 0x4020) {
+          return;
+        } else if (addr < 0x6004) {
+          test('%s: %s', addr.to(16), val.to(16));
+          if (addr == 0x6000 && val != 0x80 && val > 0) {
+            test('invalid result code: %s', val.to(16));
+            process.exit(1);
+          }
+        } else if (addr < 0x8000) {
+          process.stdout.write(String.fromCharCode(val));
         }
-      } else if (addr < 0x8000) {
-        process.stdout.write(String.fromCharCode(val));
-      }
-      this.cart.w8({val, addr});
-      return;
+        this.cart.w8({val, addr});
+        return;
     }
 
     throw new UnmappedAddressError(addr);
