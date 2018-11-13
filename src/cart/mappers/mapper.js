@@ -19,6 +19,12 @@ export default class Mapper {
 
   w8({val, addr}) {
     switch (addr >> 12) {
+      case 0x4:
+      case 0x5:
+        if (addr < 0x4018) {
+          break;
+        }
+        return;
       case 0x6:
       case 0x7:
         if (this.prgRamEnable) {
@@ -28,11 +34,18 @@ export default class Mapper {
       default:
         break;
     }
+
     throw new UnmappedAddressError(addr);
   }
 
   r8(addr) {
     switch (addr >> 12) {
+      case 0x4:
+      case 0x5:
+        if (addr < 0x4018) {
+          break;
+        }
+        return 0xff;
       case 0x6:
       case 0x7:
         if (!this.prgRamEnable) {
@@ -56,6 +69,7 @@ export default class Mapper {
       default:
         break;
     }
+
     throw new UnmappedAddressError(addr);
   }
 }
