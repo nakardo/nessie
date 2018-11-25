@@ -129,14 +129,14 @@ export default class Ppu {
         return;
       case PPU.PPUMASK:
         this.mask = val;
-        break;
+        return;
       case PPU.OAMADDR:
         this.oamAddr = val;
-        break;
+        return;
       case PPU.OAMDATA:
         this.oam[this.oamAddr++] = val;
         this.oamAddr &= 0xff;
-        break;
+        return;
       case PPU.PPUSCROLL:
         // Horizontal offsets range from 0 to 255. "Normal" vertical offsets
         // range from 0 to 239, while values of 240 to 255 are treated as -16
@@ -144,17 +144,18 @@ export default class Ppu {
         // attribute table.
         this.scroll[this.writeCount++] = val;
         this.writeCount &= 1;
-        break;
+        return;
       case PPU.PPUADDR: {
         const offset = this.writeCount << 2;
         this.ppuAddr &= ~(0xf << offset);
         this.ppuAddr |= val << offset;
         this.writeCount++;
         this.writeCount &= 1;
-        break;
+        return;
       }
       case PPU.PPUDATA:
-        return this.vram[this.ppuAddr & 0x3fff];
+        this.vram[this.ppuAddr & 0x3fff];
+        return;
       default:
         break;
     }
