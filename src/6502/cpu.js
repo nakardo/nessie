@@ -12,6 +12,9 @@ const stack = Debug('nes:cpu:stack');
 const MAX_FRAME_CYCLES = 29830;
 
 export default class Cpu {
+  mmu = null;
+  ppu = null;
+
   a = 0;
   x = 0;
   y = 0;
@@ -26,8 +29,9 @@ export default class Cpu {
   nmi = false;
   loop = null;
 
-  constructor(mmu) {
+  constructor(mmu, ppu) {
     this.mmu = mmu;
+    this.ppu = ppu;
   }
 
   push8(val) {
@@ -105,22 +109,23 @@ export default class Cpu {
 
   start() {
     const addr = this.mmu.r16(INT.RESET_ADDR);
-    const tick = () => {
-      this.step();
-      this.loop = raf(tick);
+    const loop = () => {
+      this.runFrame();
+      this.loop = raf(loop);
     };
     debug('start at: %s', addr.to(16, 2));
     this.pc = addr;
-    this.loop = raf(tick);
+    this.loop = raf(loop);
   }
 
-  step() {
+  runFrame() {
     this.t = 0;
     while (this.t < MAX_FRAME_CYCLES) {
       this.handleInterrupts();
-      this.runCycle();
+      const cycles = this.runCycle();
+      this.ppu.step(cycles);
+      this.t += cycles;
     }
-    // this.nmi = true;
   }
 
   handleInterrupts() {
@@ -230,8 +235,7 @@ export default class Cpu {
     }
 
     this.pc = (this.pc + bytes) & 0xffff;
-    this.t += totalCycles;
-
     execute({...inst, cpu: this, mmu: this.mmu, addr, operand});
+    return totalCycles;
   }
 }

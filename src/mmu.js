@@ -1,7 +1,6 @@
 import assert from 'assert';
 import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from './errors';
-import Ppu from './ppu/ppu';
 
 const debug = Debug('nes:mmu');
 const test = Debug('nes:test');
@@ -31,11 +30,14 @@ const test = Debug('nes:test');
 export default class Mmu {
   cart = null;
   ram = new Uint8Array(0x800);
-  ppu = new Ppu();
   apu = new Uint8Array(0x18);
 
+  constructor(ppu) {
+    this.ppu = ppu;
+  }
+
   r8(addr) {
-    assert.ok(typeof addr === 'number', 'invalid address');
+    assert(typeof addr === 'number', 'invalid address');
     addr &= 0xffff;
 
     switch (addr >> 12) {
@@ -54,12 +56,13 @@ export default class Mmu {
         return this.cart.r8(addr);
     }
 
+    // eslint-disable-next-line no-unreachable
     throw new UnmappedAddressError(addr);
   }
 
   w8({val, addr}) {
-    assert.ok(typeof val === 'number', 'invalid value');
-    assert.ok(typeof addr === 'number', 'invalid address');
+    assert(typeof val === 'number', 'invalid value');
+    assert(typeof addr === 'number', 'invalid address');
     addr &= 0xffff;
 
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
@@ -92,6 +95,7 @@ export default class Mmu {
         return;
     }
 
+    // eslint-disable-next-line no-unreachable
     throw new UnmappedAddressError(addr);
   }
 
