@@ -10,7 +10,7 @@ const debug = Debug('nes');
 export default class Nes {
   ppu = new Ppu();
   mmu = new Mmu(this.ppu);
-  cpu = new Cpu(this.mmu);
+  cpu = new Cpu(this.mmu, this.ppu);
   cart = null;
 
   constructor() {
