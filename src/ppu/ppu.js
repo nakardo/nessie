@@ -95,7 +95,7 @@ export default class Ppu {
         this.latch = this.oam[this.oamAddr];
         break;
       case PPU.PPUDATA:
-        this.latch = this.ppuData;
+        this.latch = this.vram[this.ppuAddr];
         break;
       case PPU.PPUCTRL:
       case PPU.PPUMASK:
@@ -149,12 +149,13 @@ export default class Ppu {
         const offset = this.writeCount << 2;
         this.ppuAddr &= ~(0xf << offset);
         this.ppuAddr |= val << offset;
+        this.ppuAddr &= 0x3fff;
         this.writeCount++;
         this.writeCount &= 1;
         return;
       }
       case PPU.PPUDATA:
-        this.vram[this.ppuAddr & 0x3fff];
+        this.vram[this.ppuAddr] = val;
         return;
       default:
         break;
