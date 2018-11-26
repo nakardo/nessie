@@ -146,7 +146,7 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       case PPU.PPUADDR: {
-        const offset = this.writeCount << 2;
+        const offset = ~this.writeCount << 2;
         this.ppuAddr &= ~(0xf << offset);
         this.ppuAddr |= val << offset;
         this.ppuAddr &= 0x3fff;
