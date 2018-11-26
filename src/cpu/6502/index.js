@@ -8,8 +8,8 @@ const debug = Debug('nes:cpu');
 const interrupt = Debug('nes:cpu:int');
 const stack = Debug('nes:cpu:stack');
 
-export default class Cpu {
-  mmu = null;
+export default class MOS6502 {
+  mem = null;
 
   a = 0;
   x = 0;
@@ -24,15 +24,15 @@ export default class Cpu {
   irq = false;
   nmi = false;
 
-  constructor(mmu) {
-    this.mmu = mmu;
+  constructor(mem) {
+    this.mem = mem;
   }
 
   push8(val) {
     val &= 0xff;
     const addr = 0x100 | this.sp;
     stack('push to: %s, val: %s', addr.to(16, 2), val.to(16));
-    this.mmu.w8({val, addr});
+    this.mem.w8({val, addr});
     this.sp = --this.sp & 0xff;
   }
 
@@ -44,7 +44,7 @@ export default class Cpu {
   pull8() {
     this.sp = ++this.sp & 0xff;
     const addr = 0x100 | this.sp;
-    const val = this.mmu.r8(addr);
+    const val = this.mem.r8(addr);
     stack('pull from: %s, val: %s', addr.to(16, 2), val.to(16));
     return val;
   }
@@ -102,7 +102,7 @@ export default class Cpu {
   }
 
   reset() {
-    const addr = this.mmu.r16(INT.RESET_ADDR);
+    const addr = this.mem.r16(INT.RESET_ADDR);
     debug('reset addr: %s', addr.to(16, 2));
     this.pc = addr;
   }
@@ -131,14 +131,14 @@ export default class Cpu {
     this.push16(this.pc);
     this.push8(this.stat);
     this.interrupt(false);
-    this.pc = this.mmu.r16(vector);
+    this.pc = this.mem.r16(vector);
     this.cycles += 7;
 
     interrupt('pc: %s', this.pc.to(16));
   }
 
   decode() {
-    const opcode = this.mmu.r8(this.pc);
+    const opcode = this.mem.r8(this.pc);
     debug('pc: %s, opcode: %s', this.pc.to(16, 2), opcode.to(16));
     return instSet[opcode];
   }
@@ -163,14 +163,14 @@ export default class Cpu {
         addr = operand;
         break;
       case MODE.ABS:
-        addr = this.mmu.r16(operand);
+        addr = this.mem.r16(operand);
         break;
       case MODE.ABS_X:
-        addr = this.mmu.r16(operand) + this.x;
+        addr = this.mem.r16(operand) + this.x;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       case MODE.ABS_Y:
-        addr = this.mmu.r16(operand) + this.y;
+        addr = this.mem.r16(operand) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       /**
@@ -188,32 +188,32 @@ export default class Cpu {
        * $3000.
        */
       case MODE.IND: {
-        const laddr = this.mmu.r16(operand);
+        const laddr = this.mem.r16(operand);
         const haddr = (laddr & 0xff00) | ((laddr + 1) & 0xff);
-        addr = this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8);
+        addr = this.mem.r8(laddr) | (this.mem.r8(haddr) << 8);
         break;
       }
       case MODE.IDX_IND: {
-        const laddr = (this.mmu.r8(operand) + this.x) & 0xff;
+        const laddr = (this.mem.r8(operand) + this.x) & 0xff;
         const haddr = (laddr + 1) & 0xff;
-        addr = this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8);
+        addr = this.mem.r8(laddr) | (this.mem.r8(haddr) << 8);
         break;
       }
       case MODE.IND_IDX: {
-        const laddr = this.mmu.r8(operand);
+        const laddr = this.mem.r8(operand);
         const haddr = (laddr + 1) & 0xff;
-        addr = (this.mmu.r8(laddr) | (this.mmu.r8(haddr) << 8)) + this.y;
+        addr = (this.mem.r8(laddr) | (this.mem.r8(haddr) << 8)) + this.y;
         totalCycles += this.pageCrossedCycles({branchCycles, addr});
         break;
       }
       case MODE.ZERO_PAGE:
-        addr = this.mmu.r8(operand);
+        addr = this.mem.r8(operand);
         break;
       case MODE.ZERO_PAGE_X:
-        addr = (this.mmu.r8(operand) + this.x) & 0xff;
+        addr = (this.mem.r8(operand) + this.x) & 0xff;
         break;
       case MODE.ZERO_PAGE_Y:
-        addr = (this.mmu.r8(operand) + this.y) & 0xff;
+        addr = (this.mem.r8(operand) + this.y) & 0xff;
         break;
       default:
         throw new Error('Unknown addressing mode');
@@ -221,6 +221,6 @@ export default class Cpu {
 
     this.pc = (this.pc + bytes) & 0xffff;
     this.cycles += totalCycles;
-    execute({...inst, cpu: this, mmu: this.mmu, addr, operand});
+    execute({...inst, cpu: this, mem: this.mem, addr, operand});
   }
 }

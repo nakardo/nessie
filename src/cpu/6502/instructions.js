@@ -1,15 +1,15 @@
 import {IRQ_BRK_ADDR} from './interrupts';
 
-function branch({branchCycles, cpu, mmu, addr}, cond) {
+function branch({branchCycles, cpu, mem, addr}, cond) {
   if (cond) {
-    addr = cpu.pc + mmu.r8(addr).signed();
+    addr = cpu.pc + mem.r8(addr).signed();
     cpu.t += cpu.pageCrossedCycles({branchCycles, addr});
     cpu.pc = addr & 0xffff;
   }
 }
 
-function compare({cpu, mmu, addr}, val) {
-  let res = mmu.r8(addr);
+function compare({cpu, mem, addr}, val) {
+  let res = mem.r8(addr);
   cpu.carry(val >= res);
   res = val - res;
   cpu.sign(res);
@@ -31,8 +31,8 @@ function increment({cpu}, val) {
   return val & 0xff;
 }
 
-function load({cpu, mmu, addr}) {
-  const val = mmu.r8(addr);
+function load({cpu, mem, addr}) {
+  const val = mem.r8(addr);
   cpu.sign(val);
   cpu.zero(val);
   return val;
@@ -48,8 +48,8 @@ function addWithCarry({cpu}, val) {
 }
 
 const andWithHighByte = ({reg, idx}) =>
-  function andhb({cpu, mmu, operand}) {
-    let addr = mmu.r16(operand);
+  function andhb({cpu, mem, operand}) {
+    let addr = mem.r16(operand);
     const haddr = addr >> 8;
     const laddr = addr & 0xff;
     if (laddr + cpu[idx] > 0xff) {
@@ -59,7 +59,7 @@ const andWithHighByte = ({reg, idx}) =>
     }
 
     const val = cpu[reg] & (haddr + 1);
-    mmu.w8({val, addr});
+    mem.w8({val, addr});
   };
 
 const transfer = ({from, to}) =>
@@ -101,7 +101,7 @@ function unknown({opcode}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export const adc = ({cpu, mmu, addr}) => addWithCarry({cpu}, mmu.r8(addr));
+export const adc = ({cpu, mem, addr}) => addWithCarry({cpu}, mem.r8(addr));
 
 /**
  * AND                  "AND" memory with accumulator                    AND
@@ -123,8 +123,8 @@ export const adc = ({cpu, mmu, addr}) => addWithCarry({cpu}, mmu.r8(addr));
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function and({cpu, mmu, addr}) {
-  const val = mmu.r8(addr) & cpu.a;
+export function and({cpu, mem, addr}) {
+  const val = mem.r8(addr) & cpu.a;
   cpu.sign(val);
   cpu.zero(val);
   cpu.a = val;
@@ -147,7 +147,7 @@ export function and({cpu, mmu, addr}) {
  * |  Absolute, X   |   ASL Oper,X          |    1E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function asl({opcode, cpu, mmu, addr}) {
+export function asl({opcode, cpu, mem, addr}) {
   const execute = val => {
     cpu.carry(val & 0x80);
     val = (val << 1) & 0xff;
@@ -159,8 +159,8 @@ export function asl({opcode, cpu, mmu, addr}) {
   if (opcode === 0x0a) {
     cpu.a = execute(cpu.a);
   } else {
-    const val = execute(mmu.r8(addr));
-    mmu.w8({val, addr});
+    const val = execute(mem.r8(addr));
+    mem.w8({val, addr});
   }
 }
 
@@ -226,8 +226,8 @@ export const beq = ({cpu, ...inst}) => branch({...inst, cpu}, cpu.zero());
  * |  Absolute      |   BIT Oper            |    2C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function bit({cpu, mmu, addr}) {
-  const val = mmu.r8(addr);
+export function bit({cpu, mem, addr}) {
+  const val = mem.r8(addr);
   cpu.sign(val);
   cpu.overflow(val & 0x40);
   cpu.zero(val & cpu.a);
@@ -294,11 +294,11 @@ export const bpl = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.sign());
  * +----------------+-----------------------+---------+---------+----------+
  * 1. A BRK command cannot be masked by setting I.
  */
-export function brk({cpu, mmu}) {
+export function brk({cpu, mem}) {
   cpu.push16(cpu.pc + 1);
   cpu.push8(cpu.stat | 0b110000); // Set bits 5 and 4.
   cpu.interrupt(true);
-  cpu.pc = mmu.r16(IRQ_BRK_ADDR);
+  cpu.pc = mem.r16(IRQ_BRK_ADDR);
 }
 
 /**
@@ -464,9 +464,9 @@ export const cpy = ({cpu, ...inst}) => compare({...inst, cpu}, cpu.y);
  * |  Absolute,X    |   DEC Oper,X          |    DE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function dec({cpu, mmu, addr}) {
-  const val = decrement({cpu}, mmu.r8(addr));
-  mmu.w8({val, addr});
+export function dec({cpu, mem, addr}) {
+  const val = decrement({cpu}, mem.r8(addr));
+  mem.w8({val, addr});
 }
 
 /**
@@ -521,8 +521,8 @@ export function dey({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function eor({cpu, mmu, addr}) {
-  const val = mmu.r8(addr) ^ cpu.a;
+export function eor({cpu, mem, addr}) {
+  const val = mem.r8(addr) ^ cpu.a;
   cpu.sign(val);
   cpu.zero(val);
   cpu.a = val;
@@ -542,9 +542,9 @@ export function eor({cpu, mmu, addr}) {
  * |  Absolute,X    |   INC Oper,X          |    FE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function inc({cpu, mmu, addr}) {
-  const val = increment({cpu}, mmu.r8(addr));
-  mmu.w8({val, addr});
+export function inc({cpu, mem, addr}) {
+  const val = increment({cpu}, mem.r8(addr));
+  mem.w8({val, addr});
 }
 
 /**
@@ -694,7 +694,7 @@ export function ldy({cpu, ...inst}) {
  * |  Absolute,X    |   LSR Oper,X          |    5E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function lsr({opcode, cpu, mmu, addr}) {
+export function lsr({opcode, cpu, mem, addr}) {
   const execute = val => {
     cpu.carry(val & 1);
     val >>= 1;
@@ -706,8 +706,8 @@ export function lsr({opcode, cpu, mmu, addr}) {
   if (opcode === 0x4a) {
     cpu.a = execute(cpu.a);
   } else {
-    const val = execute(mmu.r8(addr));
-    mmu.w8({val, addr});
+    const val = execute(mem.r8(addr));
+    mem.w8({val, addr});
   }
 }
 
@@ -744,8 +744,8 @@ export function nop() {}
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 on page crossing
  */
-export function ora({cpu, mmu, addr}) {
-  const val = mmu.r8(addr) | cpu.a;
+export function ora({cpu, mem, addr}) {
+  const val = mem.r8(addr) | cpu.a;
   cpu.sign(val);
   cpu.zero(val);
   cpu.a = val;
@@ -837,7 +837,7 @@ export function plp({cpu}) {
  * |  Absolute,X    |   ROL Oper,X          |    3E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rol({opcode, cpu, mmu, addr}) {
+export function rol({opcode, cpu, mem, addr}) {
   const execute = val => {
     val <<= 1;
     if (cpu.carry()) val |= 1;
@@ -851,8 +851,8 @@ export function rol({opcode, cpu, mmu, addr}) {
   if (opcode === 0x2a) {
     cpu.a = execute(cpu.a);
   } else {
-    const val = execute(mmu.r8(addr));
-    mmu.w8({val, addr});
+    const val = execute(mem.r8(addr));
+    mem.w8({val, addr});
   }
 }
 
@@ -878,7 +878,7 @@ export function rol({opcode, cpu, mmu, addr}) {
  *   Note: ROR instruction is available on MCS650X microprocessors after
  *         June, 1976.
  */
-export function ror({opcode, cpu, mmu, addr}) {
+export function ror({opcode, cpu, mem, addr}) {
   const execute = val => {
     if (cpu.carry()) {
       val |= 0x100;
@@ -893,8 +893,8 @@ export function ror({opcode, cpu, mmu, addr}) {
   if (opcode === 0x6a) {
     cpu.a = execute(cpu.a);
   } else {
-    const val = execute(mmu.r8(addr));
-    mmu.w8({val, addr});
+    const val = execute(mem.r8(addr));
+    mem.w8({val, addr});
   }
 }
 
@@ -949,8 +949,8 @@ export function rts({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function sbc({cpu, mmu, addr}) {
-  const val = mmu.r8(addr) ^ 0xff;
+export function sbc({cpu, mem, addr}) {
+  const val = mem.r8(addr) ^ 0xff;
   addWithCarry({cpu}, val);
 }
 
@@ -1018,8 +1018,8 @@ export function sei({cpu}) {
  * |  (Indirect),Y  |   STA (Oper),Y        |    91   |    2    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sta({cpu, mmu, addr}) {
-  mmu.w8({val: cpu.a, addr});
+export function sta({cpu, mem, addr}) {
+  mem.w8({val: cpu.a, addr});
 }
 
 /**
@@ -1036,8 +1036,8 @@ export function sta({cpu, mmu, addr}) {
  * |  Absolute      |   STX Oper            |    8E   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function stx({cpu, mmu, addr}) {
-  mmu.w8({val: cpu.x, addr});
+export function stx({cpu, mem, addr}) {
+  mem.w8({val: cpu.x, addr});
 }
 
 /**
@@ -1054,8 +1054,8 @@ export function stx({cpu, mmu, addr}) {
  * |  Absolute      |   STY Oper            |    8C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sty({cpu, mmu, addr}) {
-  mmu.w8({val: cpu.y, addr});
+export function sty({cpu, mem, addr}) {
+  mem.w8({val: cpu.y, addr});
 }
 
 /**
@@ -1173,8 +1173,8 @@ export function anc({cpu, ...inst}) {
  * (Indirect,X)|AAX (arg,X)|$83| 2 | 6
  * Absolute    |AAX arg    |$8F| 3 | 4.
  */
-export function sax({cpu, mmu, addr}) {
-  mmu.w8({val: cpu.a & cpu.x, addr});
+export function sax({cpu, mem, addr}) {
+  mem.w8({val: cpu.a & cpu.x, addr});
 }
 
 /**
@@ -1194,8 +1194,8 @@ export function sax({cpu, mmu, addr}) {
  *  ------------|-----------|---|---|---
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
-export function arr({cpu, mmu, addr}) {
-  let val = cpu.a & mmu.r8(addr);
+export function arr({cpu, mem, addr}) {
+  let val = cpu.a & mem.r8(addr);
   if (cpu.carry()) {
     val |= 0x100;
   }
@@ -1232,8 +1232,8 @@ export function alr({...inst}) {
  * Absolute,Y  |AXA arg,Y  |$9F| 3 | 5
  * (Indirect),Y|AXA arg    |$93| 2 | 6
  */
-export function ahx({cpu, mmu, addr}) {
-  mmu.w8({val: cpu.x & cpu.a & 7, addr});
+export function ahx({cpu, mem, addr}) {
+  mem.w8({val: cpu.x & cpu.a & 7, addr});
 }
 
 /**
@@ -1321,8 +1321,8 @@ export const stp = unknown;
  * ------------|-----------|---|---|---
  * Absolute,Y  |LAR arg,Y  |$BB| 3 | 4 *
  */
-export function las({cpu, mmu, addr}) {
-  const val = cpu.sp & mmu.r8(addr);
+export function las({cpu, mem, addr}) {
+  const val = cpu.sp & mem.r8(addr);
   cpu.sign(val);
   cpu.zero(val);
   cpu.a = cpu.x = cpu.sp = val;
@@ -1476,9 +1476,9 @@ export const xaa = unknown;
  * ------------|-----------|---|---|---
  * Absolute,Y  |XAS arg,Y  |$9B| 3 | 5
  */
-export function tas({cpu, mmu, addr}) {
+export function tas({cpu, mem, addr}) {
   cpu.sp = cpu.x & cpu.a;
-  let val = (mmu.r8(addr) >> 4) + 1;
+  let val = (mem.r8(addr) >> 4) + 1;
   val &= cpu.sp;
-  mmu.w8({val, addr});
+  mem.w8({val, addr});
 }

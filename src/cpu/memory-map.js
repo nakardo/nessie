@@ -1,8 +1,8 @@
 import assert from 'assert';
 import {debug as Debug} from 'debug';
-import {UnmappedAddressError} from './errors';
+import {UnmappedAddressError} from '../errors';
 
-const debug = Debug('nes:mmu');
+const debug = Debug('nes:cpu:memory-map');
 const test = Debug('nes:test');
 
 /**
@@ -27,12 +27,14 @@ const test = Debug('nes:test');
  *                     R = Mirror of $2000-2008 every 8 bytes
  *                         (e.g. $2008=$2000, $2018=$2000, etc.)
  */
-export default class Mmu {
+export default class MemoryMap {
   cart = null;
+  ppu = null;
   ram = new Uint8Array(0x800);
   apu = new Uint8Array(0x18);
 
-  constructor(ppu) {
+  constructor(cart, ppu) {
+    this.cart = cart;
     this.ppu = ppu;
   }
 

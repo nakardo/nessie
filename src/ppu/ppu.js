@@ -9,6 +9,7 @@ const SCANLINE_CLOCK_CYCLES = 314;
 const PPUCTRL_IGNORE_WRITES_CYCLES = 30000;
 
 export default class Ppu {
+  cart = null;
   cpu = null;
 
   // Registers
@@ -31,6 +32,10 @@ export default class Ppu {
 
   oam = new Uint8Array(0x100);
   vram = new Uint8Array(0x4000);
+
+  constructor(cart) {
+    this.cart = cart;
+  }
 
   // 8 kbytes rom or ram on cart + mappers
   // 2 kbytes ram in the console

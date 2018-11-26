@@ -1,20 +1,18 @@
 import './number';
 import {debug as Debug} from 'debug';
 import raf from 'raf';
-import Ppu from './ppu/ppu';
-import Mmu from './mmu';
-import Cpu from './6502/cpu';
 import Cart from './cart/cart';
+import Cpu from './cpu';
+import Ppu from './ppu/ppu';
 
 const debug = Debug('nes');
 
 const MAX_FRAME_CYCLES = 29830;
 
 export default class Nes {
-  ppu = new Ppu();
-  mmu = new Mmu(this.ppu);
-  cpu = new Cpu(this.mmu);
-  cart = null;
+  cart = new Cart();
+  ppu = new Ppu(this.cart);
+  cpu = new Cpu(this.cart, this.ppu);
   loop = null;
 
   constructor() {
@@ -23,8 +21,7 @@ export default class Nes {
 
   loadCart(buf) {
     debug('loading cart');
-    this.cart = new Cart(Uint8Array.from(buf));
-    this.mmu.cart = this.cart;
+    this.cart.load(Uint8Array.from(buf));
   }
 
   runFrame() {

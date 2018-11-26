@@ -19,7 +19,7 @@ export default class Cart {
     });
   }
 
-  constructor(data) {
+  load(data) {
     const prgRomPagesCount = data[4];
     const chrRomPagesCount = data[5];
 
