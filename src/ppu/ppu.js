@@ -41,7 +41,7 @@ export default class Ppu {
   // vblank
 
   step(cycles) {
-    this.t += cycles * 3;
+    this.t += cycles;
 
     // After power/reset, writes to this register are ignored for about
     // 30,000 cycles.

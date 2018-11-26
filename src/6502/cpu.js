@@ -1,5 +1,4 @@
 import {debug as Debug} from 'debug';
-import raf from 'raf';
 import instSet from './instruction-set';
 import * as FLAG from './status-flags';
 import * as MODE from './address-mode';
@@ -9,11 +8,8 @@ const debug = Debug('nes:cpu');
 const interrupt = Debug('nes:cpu:int');
 const stack = Debug('nes:cpu:stack');
 
-const MAX_FRAME_CYCLES = 29830;
-
 export default class Cpu {
   mmu = null;
-  ppu = null;
 
   a = 0;
   x = 0;
@@ -21,17 +17,15 @@ export default class Cpu {
   stat = 0;
   pc = 0;
   sp = 0;
-  t = 0;
+  cycles = 0;
   // TODO(nakardo): update flag behavior with this:
   // - https://wiki.nesdev.com/w/index.php/CPU_status_flag_behavior
   // - also revisit instructions listed.
   irq = false;
   nmi = false;
-  loop = null;
 
-  constructor(mmu, ppu) {
+  constructor(mmu) {
     this.mmu = mmu;
-    this.ppu = ppu;
   }
 
   push8(val) {
@@ -107,25 +101,16 @@ export default class Cpu {
     return !!(this.stat & FLAG.CARRY);
   }
 
-  start() {
+  reset() {
     const addr = this.mmu.r16(INT.RESET_ADDR);
-    const loop = () => {
-      this.runFrame();
-      this.loop = raf(loop);
-    };
-    debug('start at: %s', addr.to(16, 2));
+    debug('reset addr: %s', addr.to(16, 2));
     this.pc = addr;
-    this.loop = raf(loop);
   }
 
-  runFrame() {
-    this.t = 0;
-    while (this.t < MAX_FRAME_CYCLES) {
-      this.handleInterrupts();
-      const cycles = this.runCycle();
-      this.ppu.step(cycles);
-      this.t += cycles;
-    }
+  step() {
+    this.cycles = 0;
+    this.handleInterrupts();
+    this.runCycle();
   }
 
   handleInterrupts() {
@@ -147,7 +132,7 @@ export default class Cpu {
     this.push8(this.stat);
     this.interrupt(false);
     this.pc = this.mmu.r16(vector);
-    this.t += 7;
+    this.cycles += 7;
 
     interrupt('pc: %s', this.pc.to(16));
   }
@@ -235,7 +220,7 @@ export default class Cpu {
     }
 
     this.pc = (this.pc + bytes) & 0xffff;
+    this.cycles += totalCycles;
     execute({...inst, cpu: this, mmu: this.mmu, addr, operand});
-    return totalCycles;
   }
 }
