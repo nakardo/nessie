@@ -1,9 +1,9 @@
 import './number';
 import {debug as Debug} from 'debug';
 import raf from 'raf';
-import Cart from './cart/cart';
+import Cart from './cart';
 import Cpu from './cpu';
-import Ppu from './ppu/ppu';
+import Ppu from './ppu';
 
 const debug = Debug('nes');
 
