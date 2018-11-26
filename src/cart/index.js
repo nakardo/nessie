@@ -1,3 +1,4 @@
+import assert from 'assert';
 import {debug as Debug} from 'debug';
 import MAPPERS from './mappers';
 
@@ -11,6 +12,7 @@ export default class Cart {
   chrRom = null;
   prgRam = new Uint8Array(0x2000);
   mapper = null;
+  loaded = false;
 
   static createMemory({data, pages, size}) {
     return new Array(pages).fill(null).map((_, i) => {
@@ -45,13 +47,16 @@ export default class Cart {
       size: CHR_ROM_PAGE_SIZE,
     });
     this.mapper = new Mapper(this);
+    this.loaded = true;
   }
 
   r8(addr) {
+    assert(this.loaded, 'cart not loaded');
     return this.mapper.r8(addr);
   }
 
   w8({val, addr}) {
+    assert(this.loaded, 'cart not loaded');
     return this.mapper.w8({val, addr});
   }
 }
