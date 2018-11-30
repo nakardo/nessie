@@ -2,7 +2,7 @@ import assert from 'assert';
 import {debug as Debug} from 'debug';
 import {UnmappedAddressError} from '../errors';
 
-const debug = Debug('nes:cpu:memory-map');
+const debug = Debug('nes:cpu:memory');
 const test = Debug('nes:test');
 
 /**
@@ -27,7 +27,7 @@ const test = Debug('nes:test');
  *                     R = Mirror of $2000-2008 every 8 bytes
  *                         (e.g. $2008=$2000, $2018=$2000, etc.)
  */
-export default class MemoryMap {
+export default class Memory {
   cart = null;
   ppu = null;
   ram = new Uint8Array(0x800);
