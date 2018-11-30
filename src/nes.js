@@ -2,7 +2,7 @@ import './number';
 import {debug as Debug} from 'debug';
 import raf from 'raf';
 import Cart from './cart';
-import Cpu from './cpu';
+import * as Cpu from './cpu';
 import Ppu from './ppu';
 
 const debug = Debug('nes');
@@ -12,7 +12,7 @@ const MAX_FRAME_CYCLES = 29830;
 export default class Nes {
   cart = new Cart();
   ppu = new Ppu(this.cart);
-  cpu = new Cpu(this.cart, this.ppu);
+  cpu = new Cpu.MOS6502(new Cpu.Memory(this.cart, this.ppu));
   loop = null;
 
   constructor() {
