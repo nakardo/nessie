@@ -21,9 +21,6 @@ export default class Mapper {
     switch (addr >> 12) {
       case 0x4:
       case 0x5:
-        if (addr < 0x4018) {
-          break;
-        }
         return;
       case 0x6:
       case 0x7:
@@ -42,9 +39,6 @@ export default class Mapper {
     switch (addr >> 12) {
       case 0x4:
       case 0x5:
-        if (addr < 0x4018) {
-          break;
-        }
         return 0xff;
       case 0x6:
       case 0x7:

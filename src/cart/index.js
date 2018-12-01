@@ -17,7 +17,9 @@ export default class Cart {
   static createMemory({data, pages, size}) {
     return new Array(pages).fill(null).map((_, i) => {
       const offset = i * size;
-      return data.slice(offset, offset + size);
+      const pageData = new Uint8Array(size);
+      pageData.set(data.slice(offset, offset + size));
+      return pageData;
     });
   }
 
@@ -41,11 +43,15 @@ export default class Cart {
       pages: prgRomPagesCount,
       size: PRG_ROM_PAGE_SIZE,
     });
+
     this.chrRom = Cart.createMemory({
       data: data.slice(16 + PRG_ROM_PAGE_SIZE * prgRomPagesCount),
-      pages: chrRomPagesCount,
+      // TODO(nakardo): check number of pages corresponds to ines format, and
+      // default to correct pages / ram when is zero.
+      pages: chrRomPagesCount || 2,
       size: CHR_ROM_PAGE_SIZE,
     });
+
     this.mapper = new Mapper(this);
     this.loaded = true;
   }

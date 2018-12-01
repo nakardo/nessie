@@ -31,19 +31,12 @@ export default class Ppu {
   // Memory
 
   oam = new Uint8Array(0x100);
-  vram = new Uint8Array(0x4000);
+  vram = new Uint8Array(0x800);
+  palette = new Uint8Array(0x20);
 
   constructor(cart) {
     this.cart = cart;
   }
-
-  // 8 kbytes rom or ram on cart + mappers
-  // 2 kbytes ram in the console
-
-  // 2 address spaces palette (internal ppu)
-  // oam for sprites (internal ppu)
-
-  // vblank
 
   step(cycles) {
     this.t += cycles;
@@ -99,9 +92,24 @@ export default class Ppu {
         // address but do not increment.
         this.latch = this.oam[this.oamAddr];
         break;
-      case PPU.PPUDATA:
-        this.latch = this.vram[this.ppuAddr];
+      case PPU.PPUDATA: {
+        switch (this.ppuAddr >> 12) {
+          case 0x1:
+            this.latch = this.cart.r8(this.ppuAddr);
+            break;
+          case 0x2:
+          case 0x3:
+            if (this.ppuAddr < 0x3f00) {
+              this.latch = this.vram[this.ppuAddr & 0x7ff];
+            } else {
+              this.latch = this.palette[this.ppuAddr & 0x1f];
+            }
+            break;
+          default:
+            break;
+        }
         break;
+      }
       case PPU.PPUCTRL:
       case PPU.PPUMASK:
       case PPU.OAMADDR:
@@ -159,9 +167,23 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       }
-      case PPU.PPUDATA:
-        this.vram[this.ppuAddr] = val;
-        return;
+      case PPU.PPUDATA: {
+        switch (this.ppuAddr >> 12) {
+          case 0x1:
+            this.cart.w8({val, addr: this.ppuAddr});
+            return;
+          case 0x2:
+          case 0x3:
+            if (this.ppuAddr < 0x3f00) {
+              this.vram[this.ppuAddr & 0x7ff] = val;
+            } else {
+              this.palette[this.ppuAddr & 0x1f] = val;
+            }
+            return;
+          default:
+            return;
+        }
+      }
       default:
         break;
     }

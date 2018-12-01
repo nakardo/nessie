@@ -152,6 +152,7 @@ export default class MMC1 extends Mapper {
 
   updateRegister(nib) {
     debug('writing register: %s, val: %s', nib.to(16), this.shift.to(2));
+
     switch (nib) {
       case 0x8:
       case 0x9:
@@ -176,20 +177,56 @@ export default class MMC1 extends Mapper {
   }
 
   w8({val, addr}) {
-    const nib = addr >> 12;
-    if (nib >= 0x8) {
-      if (val & 0x80) {
-        this.shiftReset();
-        this.control |= 0xc;
-      } else if ((this.shift & 1) == 0) {
-        this.shiftRight(val);
-      } else {
-        this.shiftRight(val);
-        this.updateRegister(nib);
-        this.shiftReset();
+    switch (addr >> 12) {
+      case 0x1:
+      case 0x2: {
+        const bank = this.chrRomBank[0];
+        this.chrRom[bank][addr & 0x1fff] = val;
+        return;
       }
-      return;
+      case 0x3:
+      case 0x4: {
+        const bank = this.chrRomBank[1];
+        this.chrRom[bank][addr & 0x1fff] = val;
+        return;
+      }
+      case 0x5:
+      case 0x6:
+      case 0x7:
+        break;
+      default:
+        if (val & 0x80) {
+          this.shiftReset();
+          this.control |= 0xc;
+        } else if ((this.shift & 1) == 0) {
+          this.shiftRight(val);
+        } else {
+          this.shiftRight(val);
+          this.updateRegister(addr >> 12);
+          this.shiftReset();
+        }
+        return;
     }
+
     super.w8({val, addr});
+  }
+
+  r8(addr) {
+    switch (addr >> 12) {
+      case 0x1:
+      case 0x2: {
+        const bank = this.chrRomBank[0];
+        return this.chrRom[bank][addr & 0x1fff];
+      }
+      case 0x3:
+      case 0x4: {
+        const bank = this.chrRomBank[1];
+        return this.chrRom[bank][addr & 0x1fff];
+      }
+      default:
+        break;
+    }
+
+    return super.r8(addr);
   }
 }
