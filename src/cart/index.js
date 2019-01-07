@@ -36,7 +36,7 @@ export default class Cart {
     assert(Cart.isInesFormat(data), 'file is not a valid iNES format');
 
     const prgRomPagesCount = data[4];
-    const chrRomPagesCount = data[5];
+    const chrRomPagesCount = data[5] || 1; // 0 means the board uses chr-ram.
 
     const mapper = (data[6] >> 4) | (data[7] & 0xf0);
     const Mapper = MAPPERS[mapper];
@@ -44,8 +44,8 @@ export default class Cart {
     // Header data
 
     debug('mapper index: %d, uses: %s', mapper, Mapper.name);
-    debug('prg-rom pages: %d', prgRomPagesCount);
-    debug('chr-rom pages: %d', chrRomPagesCount);
+    debug('prg-rom 16kb size units: %d', prgRomPagesCount);
+    debug('chr-rom 8kb size units: %d', chrRomPagesCount);
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
@@ -61,7 +61,7 @@ export default class Cart {
 
     this.chrRom = Cart.createMemory({
       data: data.slice(PRG_ROM_PAGE_SIZE * prgRomPagesCount),
-      pages: chrRomPagesCount || 2,
+      pages: chrRomPagesCount << 1, // 4kb pages
       size: CHR_ROM_PAGE_SIZE,
     });
 
