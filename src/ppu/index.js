@@ -75,6 +75,52 @@ export default class Ppu {
     }
   }
 
+  incrementPpuAddr() {
+    this.ppuAddr += (this.stat & 4) === 0 ? 1 : 0x20;
+    this.ppuAddr &= 0x3fff;
+  }
+
+  readPpuAddr() {
+    let val;
+    switch (this.ppuAddr >> 12) {
+      case 0x1:
+        val = this.cart.r8(this.ppuAddr);
+        break;
+      case 0x2:
+      case 0x3:
+        if (this.ppuAddr < 0x3f00) {
+          val = this.vram[this.ppuAddr & 0x7ff];
+        } else {
+          val = this.palette[this.ppuAddr & 0x1f];
+        }
+        break;
+      default:
+        val = this.latch;
+        break;
+    }
+
+    this.incrementPpuAddr();
+    return val;
+  }
+
+  writePpuAddr(val) {
+    switch (this.ppuAddr >> 12) {
+      case 0x1:
+        this.cart.w8({val, addr: this.ppuAddr});
+        break;
+      case 0x2:
+      case 0x3:
+        if (this.ppuAddr < 0x3f00) {
+          this.vram[this.ppuAddr & 0x7ff] = val;
+        } else {
+          this.palette[this.ppuAddr & 0x1f] = val;
+        }
+        break;
+    }
+
+    this.incrementPpuAddr();
+  }
+
   r8(addr) {
     debug('read at: %s', addr.to(16, 2));
 
@@ -92,24 +138,9 @@ export default class Ppu {
         // address but do not increment.
         this.latch = this.oam[this.oamAddr];
         break;
-      case PPU.PPUDATA: {
-        switch (this.ppuAddr >> 12) {
-          case 0x1:
-            this.latch = this.cart.r8(this.ppuAddr);
-            break;
-          case 0x2:
-          case 0x3:
-            if (this.ppuAddr < 0x3f00) {
-              this.latch = this.vram[this.ppuAddr & 0x7ff];
-            } else {
-              this.latch = this.palette[this.ppuAddr & 0x1f];
-            }
-            break;
-          default:
-            break;
-        }
+      case PPU.PPUDATA:
+        this.latch = this.readPpuAddr();
         break;
-      }
       case PPU.PPUCTRL:
       case PPU.PPUMASK:
       case PPU.OAMADDR:
@@ -159,6 +190,7 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       case PPU.PPUADDR: {
+        // console.log('updating ppu addr:', val);
         const offset = ~this.writeCount << 2;
         this.ppuAddr &= ~(0xf << offset);
         this.ppuAddr |= val << offset;
@@ -167,23 +199,9 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       }
-      case PPU.PPUDATA: {
-        switch (this.ppuAddr >> 12) {
-          case 0x1:
-            this.cart.w8({val, addr: this.ppuAddr});
-            return;
-          case 0x2:
-          case 0x3:
-            if (this.ppuAddr < 0x3f00) {
-              this.vram[this.ppuAddr & 0x7ff] = val;
-            } else {
-              this.palette[this.ppuAddr & 0x1f] = val;
-            }
-            return;
-          default:
-            return;
-        }
-      }
+      case PPU.PPUDATA:
+        this.writePpuAddr(val);
+        return;
       default:
         break;
     }
