@@ -2,16 +2,16 @@ import {UnmappedAddressError} from '../../errors';
 
 export default class Mapper {
   prgRom = null;
-  chrRom = null;
+  chrRxm = null;
   prgRam = null;
   prgRamEnable = false;
-  chrRomBank = [0, 0];
+  chrRxmBank = [0, 0];
   prgRomBank = [0, 0];
   prgRomLastPage = 0;
 
-  constructor({prgRom, chrRom, prgRam}) {
+  constructor({prgRom, chrRxm, prgRam}) {
     this.prgRom = prgRom;
-    this.chrRom = chrRom;
+    this.chrRxm = chrRxm;
     this.prgRam = prgRam;
 
     this.prgRomBank[1] = this.prgRomLastPage = prgRom.length - 1;

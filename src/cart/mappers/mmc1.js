@@ -161,12 +161,12 @@ export default class MMC1 extends Mapper {
       case 0xa:
       case 0xb:
         // TODO(nakardo): check mode to ignore low bit.
-        this.chrRomBank[0] = this.shift;
+        this.chrRxmBank[0] = this.shift;
         break;
       case 0xc:
       case 0xd:
         // TODO(nakardo): check mode to ignore low bit.
-        this.chrRomBank[1] = this.shift;
+        this.chrRxmBank[1] = this.shift;
         break;
       case 0xe:
       case 0xf:
@@ -180,14 +180,14 @@ export default class MMC1 extends Mapper {
     switch (addr >> 12) {
       case 0x1:
       case 0x2: {
-        const bank = this.chrRomBank[0];
-        this.chrRom[bank][addr & 0x1fff] = val;
+        const bank = this.chrRxmBank[0];
+        this.chrRxm[bank][addr & 0x1fff] = val;
         return;
       }
       case 0x3:
       case 0x4: {
-        const bank = this.chrRomBank[1];
-        this.chrRom[bank][addr & 0x1fff] = val;
+        const bank = this.chrRxmBank[1];
+        this.chrRxm[bank][addr & 0x1fff] = val;
         return;
       }
       case 0x5:
@@ -215,13 +215,13 @@ export default class MMC1 extends Mapper {
     switch (addr >> 12) {
       case 0x1:
       case 0x2: {
-        const bank = this.chrRomBank[0];
-        return this.chrRom[bank][addr & 0x1fff];
+        const bank = this.chrRxmBank[0];
+        return this.chrRxm[bank][addr & 0x1fff];
       }
       case 0x3:
       case 0x4: {
-        const bank = this.chrRomBank[1];
-        return this.chrRom[bank][addr & 0x1fff];
+        const bank = this.chrRxmBank[1];
+        return this.chrRxm[bank][addr & 0x1fff];
       }
       default:
         break;
