@@ -4,9 +4,6 @@ import MAPPERS from './mappers';
 
 const debug = Debug('nes:cart');
 
-const PRG_ROM_PAGE_SIZE = 0x4000;
-const CHR_RXM_PAGE_SIZE = 0x2000;
-
 export default class Cart {
   prgRam = new Uint8Array(0x2000);
   prgRom = null;
@@ -39,12 +36,12 @@ export default class Cart {
     assert((data[6] & 4) === 0, 'cart contains trainer data');
 
     const prgRomPagesCount = data[4];
-    const chrRxmPagesCount = data[5] || 1; // 0 means the board uses chr-ram.
+    const chrRxmPagesCount = data[5]; // 0 means the board uses chr-ram.
 
     const mapper = (data[6] >> 4) | (data[7] & 0xf0);
     const Mapper = MAPPERS[mapper];
 
-    // Header data
+    // Header data (16 bytes)
 
     debug('mapper index: %d, uses: %s', mapper, Mapper.name);
     debug('prg-rom 16kb size units: %d', prgRomPagesCount);
@@ -55,15 +52,15 @@ export default class Cart {
     // Cart memory & mapper
 
     this.prgRom = Cart.createMemory({
-      data: data.slice(16),
+      data: data.slice(0x10),
       pages: prgRomPagesCount,
-      size: PRG_ROM_PAGE_SIZE,
+      size: 0x4000,
     });
 
     this.chrRxm = Cart.createMemory({
-      data: data.slice(16 + PRG_ROM_PAGE_SIZE * prgRomPagesCount),
-      pages: chrRxmPagesCount << 1, // 4kb pages
-      size: CHR_RXM_PAGE_SIZE,
+      data: data.slice(0x10 + 0x4000 * prgRomPagesCount),
+      pages: (chrRxmPagesCount || 1) << 1, // 4kb pages (8kb units * 2 total)
+      size: 0x1000,
     });
 
     this.mapper = new Mapper(this);

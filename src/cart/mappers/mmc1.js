@@ -177,17 +177,12 @@ export default class MMC1 extends Mapper {
   }
 
   w8({val, addr}) {
-    switch (addr >> 12) {
-      case 0x1:
-      case 0x2: {
-        const bank = this.chrRxmBank[0];
-        this.chrRxm[bank][addr & 0x1fff] = val;
-        return;
-      }
-      case 0x3:
-      case 0x4: {
-        const bank = this.chrRxmBank[1];
-        this.chrRxm[bank][addr & 0x1fff] = val;
+    const hnib = addr >> 12;
+    switch (hnib) {
+      case 0x0:
+      case 0x1: {
+        const bank = this.chrRxmBank[hnib & 1];
+        this.chrRxm[bank][addr & 0xfff] = val;
         return;
       }
       case 0x5:
@@ -202,7 +197,7 @@ export default class MMC1 extends Mapper {
           this.shiftRight(val);
         } else {
           this.shiftRight(val);
-          this.updateRegister(addr >> 12);
+          this.updateRegister(hnib);
           this.shiftReset();
         }
         return;
@@ -212,16 +207,12 @@ export default class MMC1 extends Mapper {
   }
 
   r8(addr) {
-    switch (addr >> 12) {
-      case 0x1:
-      case 0x2: {
-        const bank = this.chrRxmBank[0];
-        return this.chrRxm[bank][addr & 0x1fff];
-      }
-      case 0x3:
-      case 0x4: {
-        const bank = this.chrRxmBank[1];
-        return this.chrRxm[bank][addr & 0x1fff];
+    const hnib = addr >> 12;
+    switch (hnib) {
+      case 0x0:
+      case 0x1: {
+        const bank = this.chrRxmBank[hnib & 1];
+        return this.chrRxm[bank][addr & 0xfff];
       }
       default:
         break;
