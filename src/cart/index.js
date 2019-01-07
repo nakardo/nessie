@@ -24,7 +24,7 @@ export default class Cart {
   }
 
   static isInesFormat1(data) {
-    const ines2 = (data[7] >> 2) & (3 === 2);
+    const ines2 = ((data[7] >> 2) & 3) === 2;
     return (
       data[0] === 0x4e &&
       data[1] === 0x45 &&
@@ -36,6 +36,7 @@ export default class Cart {
 
   load(data) {
     assert(Cart.isInesFormat1(data), 'invalid or unsupported iNES format');
+    assert((data[6] & 4) === 0, 'cart contains trainer data');
 
     const prgRomPagesCount = data[4];
     const chrRxmPagesCount = data[5] || 1; // 0 means the board uses chr-ram.
@@ -50,8 +51,6 @@ export default class Cart {
     debug('chr-rom 8kb size units: %d', chrRxmPagesCount);
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
-
-    assert(data[6] & (8 === 0), 'cart contains trainer data');
 
     // Cart memory & mapper
 
