@@ -8,9 +8,9 @@ const PRG_ROM_PAGE_SIZE = 0x4000;
 const CHR_ROM_PAGE_SIZE = 0x2000;
 
 export default class Cart {
+  prgRam = new Uint8Array(0x2000);
   prgRom = null;
   chrRom = null;
-  prgRam = new Uint8Array(0x2000);
   mapper = null;
   loaded = false;
 
@@ -49,16 +49,18 @@ export default class Cart {
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
+    // Cart memory & mapper
+
+    data = data.slice(16);
+
     this.prgRom = Cart.createMemory({
-      data: data.slice(16),
+      data,
       pages: prgRomPagesCount,
       size: PRG_ROM_PAGE_SIZE,
     });
 
     this.chrRom = Cart.createMemory({
-      data: data.slice(16 + PRG_ROM_PAGE_SIZE * prgRomPagesCount),
-      // TODO(nakardo): check number of pages corresponds to ines format, and
-      // default to correct pages / ram when is zero.
+      data: data.slice(PRG_ROM_PAGE_SIZE * prgRomPagesCount),
       pages: chrRomPagesCount || 2,
       size: CHR_ROM_PAGE_SIZE,
     });
