@@ -23,7 +23,18 @@ export default class Cart {
     });
   }
 
+  static isInesFormat(data) {
+    return (
+      data[0] === 0x4e &&
+      data[1] === 0x45 &&
+      data[2] === 0x53 &&
+      data[3] === 0x1a
+    );
+  }
+
   load(data) {
+    assert(Cart.isInesFormat(data), 'file is not a valid iNES format');
+
     const prgRomPagesCount = data[4];
     const chrRomPagesCount = data[5];
 
