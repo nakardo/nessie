@@ -23,17 +23,19 @@ export default class Cart {
     });
   }
 
-  static isInesFormat(data) {
+  static isInesFormat1(data) {
+    const ines2 = (data[7] >> 2) & (3 === 2);
     return (
       data[0] === 0x4e &&
       data[1] === 0x45 &&
       data[2] === 0x53 &&
-      data[3] === 0x1a
+      data[3] === 0x1a &&
+      !ines2
     );
   }
 
   load(data) {
-    assert(Cart.isInesFormat(data), 'file is not a valid iNES format');
+    assert(Cart.isInesFormat1(data), 'invalid or unsupported iNES format');
 
     const prgRomPagesCount = data[4];
     const chrRxmPagesCount = data[5] || 1; // 0 means the board uses chr-ram.
@@ -49,18 +51,18 @@ export default class Cart {
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
+    assert(data[6] & (8 === 0), 'cart contains trainer data');
+
     // Cart memory & mapper
 
-    data = data.slice(16);
-
     this.prgRom = Cart.createMemory({
-      data,
+      data: data.slice(16),
       pages: prgRomPagesCount,
       size: PRG_ROM_PAGE_SIZE,
     });
 
     this.chrRxm = Cart.createMemory({
-      data: data.slice(PRG_ROM_PAGE_SIZE * prgRomPagesCount),
+      data: data.slice(16 + PRG_ROM_PAGE_SIZE * prgRomPagesCount),
       pages: chrRxmPagesCount << 1, // 4kb pages
       size: CHR_RXM_PAGE_SIZE,
     });
