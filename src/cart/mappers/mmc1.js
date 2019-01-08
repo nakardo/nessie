@@ -184,13 +184,16 @@ export default class MMC1 extends Mapper {
       case 0x1: {
         const bank = this.chrRxmBank[hnib & 1];
         this.chrRxm[bank][addr & 0xfff] = val;
-        return;
-      }
-      case 0x5:
-      case 0x6:
-      case 0x7:
         break;
-      default:
+      }
+      case 0x8:
+      case 0x9:
+      case 0xa:
+      case 0xb:
+      case 0xc:
+      case 0xd:
+      case 0xe:
+      case 0xf:
         if (val & 0x80) {
           this.shiftReset();
           this.control |= 0xc;
@@ -201,10 +204,11 @@ export default class MMC1 extends Mapper {
           this.updateRegister(hnib);
           this.shiftReset();
         }
-        return;
+        break;
+      default:
+        super.w8({val, addr});
+        break;
     }
-
-    super.w8({val, addr});
   }
 
   r8(addr) {
@@ -216,9 +220,7 @@ export default class MMC1 extends Mapper {
         return this.chrRxm[bank][addr & 0xfff];
       }
       default:
-        break;
+        return super.r8(addr);
     }
-
-    return super.r8(addr);
   }
 }
