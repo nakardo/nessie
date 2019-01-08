@@ -126,6 +126,7 @@ export default class MMC1 extends Mapper {
 
   shiftReset() {
     this.shift = 0b10000;
+    debug('shift reset');
   }
 
   shiftRight(val) {
@@ -135,7 +136,7 @@ export default class MMC1 extends Mapper {
 
   selectPrgRomBank(bank) {
     const mode = (this.control >> 2) & 3;
-    debug('change to bank: %s, using mode: %d', bank.to(16), mode);
+    debug('change prg-rom to bank: %d, mode: %d', bank, mode);
 
     if (mode == 0 || mode == 1) {
       bank &= 0xe;
