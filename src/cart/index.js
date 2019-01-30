@@ -45,7 +45,7 @@ export default class Cart {
 
     debug('mapper index: %d, uses: %s', mapper, Mapper.name);
     debug('prg-rom 16kb size units: %d', prgRomPagesCount);
-    debug('chr-rom 8kb size units: %d', chrRxmPagesCount);
+    debug('chr-rxm 8kb size units: %d', chrRxmPagesCount);
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
@@ -59,7 +59,7 @@ export default class Cart {
 
     this.chrRxm = Cart.createMemory({
       data: data.slice(0x10 + 0x4000 * prgRomPagesCount),
-      pages: (chrRxmPagesCount || 1) << 1, // 4kb pages (8kb units * 2 total)
+      pages: (chrRxmPagesCount || 1) << 1, // shift count to have 4kb banks.
       size: 0x1000,
     });
 

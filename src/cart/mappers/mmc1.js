@@ -126,7 +126,6 @@ export default class MMC1 extends Mapper {
 
   shiftReset() {
     this.shift = 0b10000;
-    debug('shift reset');
   }
 
   shiftRight(val) {
@@ -161,14 +160,12 @@ export default class MMC1 extends Mapper {
         break;
       case 0xa:
       case 0xb:
-        // TODO(nakardo): check mode to ignore low bit.
-        this.chrRxmBank[0] = this.shift;
-        break;
       case 0xc:
-      case 0xd:
-        // TODO(nakardo): check mode to ignore low bit.
-        this.chrRxmBank[1] = this.shift;
+      case 0xd: {
+        const bank = (nib >> 1) & 1;
+        this.chrRxmBank[bank] = this.shift;
         break;
+      }
       case 0xe:
       case 0xf:
         this.prgRamEnable = (this.shift & 0x10) === 0;
@@ -195,6 +192,7 @@ export default class MMC1 extends Mapper {
       case 0xe:
       case 0xf:
         if (val & 0x80) {
+          debug('shift reset and write control');
           this.shiftReset();
           this.control |= 0xc;
         } else if ((this.shift & 1) == 0) {
