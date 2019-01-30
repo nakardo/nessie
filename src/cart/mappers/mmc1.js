@@ -121,8 +121,13 @@ const debug = Debug('nes:mapper');
  *           5-bit array for this data, not a separate one for each register.
  */
 export default class MMC1 extends Mapper {
-  control = 0;
   shift = 0b10000;
+  // TODO(nakardo): refactor to update this registers and compute banks
+  // everytime a register or the 'mode' in the control register changes.
+  regControl = 0;
+  regPrgRomBank = 0;
+  regChrRxmBank0 = 0;
+  regChrRxmBank1 = 0;
 
   shiftReset() {
     this.shift = 0b10000;
@@ -134,7 +139,7 @@ export default class MMC1 extends Mapper {
   }
 
   selectPrgRomBank(bank) {
-    const mode = (this.control >> 2) & 3;
+    const mode = (this.regControl >> 2) & 3;
     debug('change prg-rom to bank: %d, mode: %d', bank, mode);
 
     if (mode == 0 || mode == 1) {
@@ -156,7 +161,7 @@ export default class MMC1 extends Mapper {
     switch (nib) {
       case 0x8:
       case 0x9:
-        this.control = this.shift;
+        this.regControl = this.shift;
         break;
       case 0xa:
       case 0xb:
@@ -194,7 +199,7 @@ export default class MMC1 extends Mapper {
         if (val & 0x80) {
           debug('shift reset and write control');
           this.shiftReset();
-          this.control |= 0xc;
+          this.regControl |= 0xc;
         } else if ((this.shift & 1) == 0) {
           this.shiftRight(val);
         } else {
