@@ -19,7 +19,7 @@ export default class Ppu {
 
   ctrl = 0;
   mask = 0;
-  stat = 0;
+  _stat = 0;
   scroll = [0, 0]; // (x, y)
 
   t = 0;
@@ -27,18 +27,26 @@ export default class Ppu {
   resetCycles = 0;
   writeCount = 0;
   reset = true;
-  latch = 0;
+  _latch = 0;
 
   constructor(cart) {
     this.mem = new Memory(cart);
   }
 
-  set _stat(stat) {
-    this.stat = this.mem.stat = stat;
+  get stat() {
+    return this._stat;
   }
 
-  set _latch(latch) {
-    this.latch = this.mem.latch = latch;
+  set stat(stat) {
+    this._stat = this.mem.stat = stat;
+  }
+
+  get latch() {
+    return this._latch;
+  }
+
+  set latch(latch) {
+    this._latch = this.mem.latch = latch;
   }
 
   step(cycles) {
@@ -68,7 +76,7 @@ export default class Ppu {
       // Set at dot 1 of line 241 (the line *after* the post-render
       // line); cleared after reading $2002 and at dot 1 of the
       // pre-render line.
-      this._stat |= 1 << 7;
+      this.stat |= 1 << 7;
     }
 
     // OAMADDR is set to 0 during each of ticks 257-320 (the sprite tile
@@ -86,17 +94,17 @@ export default class Ppu {
         // Reading the status register will clear bit 7 mentioned above and
         // also the address latch used by PPUSCROLL and PPUADDR. It does not
         // clear the sprite 0 hit or overflow bit.
-        this._stat &= ~(1 << 7);
-        this._latch = this._stat;
+        this.stat &= ~(1 << 7);
+        this.latch = this.stat;
         break;
       case PPU.OAMDATA:
         // TODO: Writes will increment OAMADDR after the write; reads during
         // vertical or forced blanking return the value from OAM at that
         // address but do not increment.
-        this._latch = this.oam.r8();
+        this.latch = this.oam.r8();
         break;
       case PPU.PPUDATA:
-        this._latch = this.mem.r8();
+        this.latch = this.mem.r8();
         break;
       case PPU.PPUCTRL:
       case PPU.PPUMASK:
@@ -107,13 +115,13 @@ export default class Ppu {
         break;
     }
 
-    return this._latch;
+    return this.latch;
   }
 
   w8({val, addr}) {
     val &= 0xff;
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
-    this._latch = val;
+    this.latch = val;
 
     switch (0x2000 | (addr & 0x7)) {
       case PPU.PPUCTRL:
@@ -124,7 +132,7 @@ export default class Ppu {
         this.ctrl = val;
 
         // we're in vblank period and generate nmi on vblank is enabled.
-        if (this.ctrl & this._stat & 0x80) {
+        if (this.ctrl & this.stat & 0x80) {
           this.cpu.nmi = true;
         }
         return;
