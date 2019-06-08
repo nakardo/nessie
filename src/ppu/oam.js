@@ -7,7 +7,7 @@ export default class Oam {
   }
 
   w8(val) {
-    this.oam[this.addr++] = val;
+    this.mem[this.addr++] = val;
     this.addr &= 0xff;
   }
 }
