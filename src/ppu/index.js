@@ -27,7 +27,7 @@ export default class Ppu {
   resetCycles = 0;
   writeCount = 0;
   reset = true;
-  _latch = 0;
+  latch = 0;
 
   constructor(cart) {
     this.mem = new Memory(cart);
@@ -39,14 +39,6 @@ export default class Ppu {
 
   set stat(stat) {
     this._stat = this.mem.stat = stat;
-  }
-
-  get latch() {
-    return this._latch;
-  }
-
-  set latch(latch) {
-    this._latch = this.mem.latch = latch;
   }
 
   step(cycles) {

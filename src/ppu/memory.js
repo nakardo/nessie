@@ -1,8 +1,8 @@
+import {UnmappedAddressError} from '../errors';
+
 export default class Memory {
   cart = null;
-
   stat = 0;
-  latch = 0;
 
   vram = new Uint8Array(0x800);
   palette = new Uint8Array(0x20);
@@ -20,6 +20,7 @@ export default class Memory {
   r8() {
     let val;
     switch (this.addr >> 12) {
+      case 0x0:
       case 0x1:
         val = this.cart.r8(this.addr);
         break;
@@ -32,8 +33,7 @@ export default class Memory {
         }
         break;
       default:
-        val = this.latch;
-        break;
+        throw new UnmappedAddressError(this.addr);
     }
 
     this.increment();
@@ -42,6 +42,7 @@ export default class Memory {
 
   w8(val) {
     switch (this.addr >> 12) {
+      case 0x0:
       case 0x1:
         this.cart.w8({val, addr: this.addr});
         break;
@@ -53,6 +54,8 @@ export default class Memory {
           this.palette[this.addr & 0x1f] = val;
         }
         break;
+      default:
+        throw new UnmappedAddressError(this.addr);
     }
 
     this.increment();
