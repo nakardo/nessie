@@ -138,9 +138,13 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       case PPU.PPUADDR: {
-        const offset = ~this.writeCount << 2;
-        this.mem.addr &= ~(0xf << offset);
-        this.mem.addr |= val << offset;
+        if (this.writeCount === 0) {
+          this.mem.addr &= ~0xf0;
+          this.mem.addr |= val << 4;
+        } else {
+          this.mem.addr &= ~0xf;
+          this.mem.addr |= val;
+        }
         this.mem.addr &= 0x3fff;
         this.writeCount++;
         this.writeCount &= 1;
