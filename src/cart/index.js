@@ -63,7 +63,11 @@ export default class Cart {
       size: 0x1000,
     });
 
-    this.mapper = new Mapper(this);
+    this.mapper = new Mapper({
+      prgRom: this.prgRom,
+      prgRam: this.prgRam,
+      chrRxm: this.chrRxm,
+    });
     this.loaded = true;
   }
 

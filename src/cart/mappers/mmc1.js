@@ -1,7 +1,7 @@
-import Mapper from './mapper';
 import {debug as Debug} from 'debug';
+import {UnmappedAddressError} from '../../errors';
 
-const debug = Debug('nes:mapper');
+const debug = Debug('nes:cart:mapper:mmc1');
 
 /**
  * +----------------+
@@ -120,14 +120,23 @@ const debug = Debug('nes:mapper');
  *           by writing bit 7 of the register. Note that MMC1 only has one
  *           5-bit array for this data, not a separate one for each register.
  */
-export default class MMC1 extends Mapper {
+export default class MMC1 {
+  prgRom = null;
+  prgRam = null;
+  chrRxm = null;
+  prgRomLastPage = 0;
+
   shift = 0b10000;
-  // TODO(nakardo): refactor to update this registers and compute banks
-  // everytime a register or the 'mode' in the control register changes.
-  regControl = 0;
-  regPrgRomBank = 0;
-  regChrRxmBank0 = 0;
-  regChrRxmBank1 = 0;
+  control = 0;
+  chrRxmBank = [0, 0];
+  prgRomBank = 0;
+
+  constructor({prgRom, prgRam, chrRxm}) {
+    this.prgRom = prgRom;
+    this.prgRam = prgRam;
+    this.chrRxm = chrRxm;
+    this.prgRomLastPage = prgRom.length - 1;
+  }
 
   shiftReset() {
     this.shift = 0b10000;
@@ -138,92 +147,64 @@ export default class MMC1 extends Mapper {
     this.shift |= (val & 1) << 4;
   }
 
-  selectPrgRomBank(bank) {
-    const mode = (this.regControl >> 2) & 3;
-    debug('change prg-rom to bank: %d, mode: %d', bank, mode);
+  getPrgRomBank(bank) {
+    const mode = (this.control >> 2) & 3;
 
     if (mode == 0 || mode == 1) {
-      bank &= 0xe;
-      this.prgRomBank[0] = bank;
-      this.prgRomBank[1] = bank + 1;
+      if (bank === 0) return this.prgRomBank & 0xe;
+      else if (bank === 1) return (this.prgRomBank & 0xe) + 1;
     } else if (mode == 2) {
-      this.prgRomBank[0] = 0;
-      this.prgRomBank[1] = bank;
-    } else {
-      this.prgRomBank[0] = bank;
-      this.prgRomBank[1] = this.prgRomLastPage;
+      if (bank === 0) return 0;
+      else if (bank === 1) return this.prgRomBank;
+    } else if (mode == 3) {
+      if (bank === 0) return this.prgRomBank;
+      else if (bank === 1) return this.prgRomLastPage;
     }
-  }
 
-  updateRegister(nib) {
-    debug('writing register: %s, val: %s', nib.to(16), this.shift.to(2));
-
-    switch (nib) {
-      case 0x8:
-      case 0x9:
-        this.regControl = this.shift;
-        break;
-      case 0xa:
-      case 0xb:
-      case 0xc:
-      case 0xd: {
-        const bank = (nib >> 1) & 1;
-        this.chrRxmBank[bank] = this.shift;
-        break;
-      }
-      case 0xe:
-      case 0xf:
-        this.prgRamEnable = (this.shift & 0x10) === 0;
-        this.selectPrgRomBank(this.shift & 0xf);
-        break;
-    }
+    throw new Error('unknown mode or prg-rom bank');
   }
 
   w8({val, addr}) {
-    const hnib = addr >> 12;
-    switch (hnib) {
-      case 0x0:
-      case 0x1: {
-        const bank = this.chrRxmBank[hnib & 1];
-        this.chrRxm[bank][addr & 0xfff] = val;
-        break;
-      }
-      case 0x8:
-      case 0x9:
-      case 0xa:
-      case 0xb:
-      case 0xc:
-      case 0xd:
-      case 0xe:
-      case 0xf:
-        if (val & 0x80) {
-          debug('shift reset and write control');
-          this.shiftReset();
-          this.regControl |= 0xc;
-        } else if ((this.shift & 1) == 0) {
-          this.shiftRight(val);
+    if (addr < 0x2000) {
+      const bank = this.chrRxmBank[(addr >> 12) & 1];
+      this.chrRxm[bank][addr & 0xfff] = val;
+    } else if (addr < 0x6000) {
+      throw new UnmappedAddressError(addr);
+    } else {
+      if (val & 0x80) {
+        debug('reset control');
+        this.shiftReset();
+        this.control |= 0xc;
+      } else if ((this.shift & 1) == 0) {
+        this.shiftRight(val);
+      } else {
+        this.shiftRight(val);
+        const hnib = addr >> 12;
+        debug('writing register: %s, val: %s', hnib.to(16), this.shift.to(2));
+        if (addr < 0xa000) {
+          this.control = this.shift;
+        } else if (addr < 0xe000) {
+          this.chrRxmBank[(hnib >> 1) & 1] = this.shift;
         } else {
-          this.shiftRight(val);
-          this.updateRegister(hnib);
-          this.shiftReset();
+          this.prgRamEnable = (this.shift & 0x10) === 0;
+          this.prgRomBank = this.shift & 0xf;
         }
-        break;
-      default:
-        super.w8({val, addr});
-        break;
+        this.shiftReset();
+      }
     }
   }
 
   r8(addr) {
-    const hnib = addr >> 12;
-    switch (hnib) {
-      case 0x0:
-      case 0x1: {
-        const bank = this.chrRxmBank[hnib & 1];
-        return this.chrRxm[bank][addr & 0xfff];
-      }
-      default:
-        return super.r8(addr);
+    if (addr < 0x2000) {
+      const bank = this.chrRxmBank[(addr >> 12) & 1];
+      return this.chrRxm[bank][addr & 0xfff];
+    } else if (addr < 0x6000) {
+      throw new UnmappedAddressError(addr);
+    } else if (addr < 0x8000) {
+      return this.prgRam[addr & 0x1fff];
+    } else {
+      const bank = this.getPrgRomBank((addr >> 14) & 1);
+      return this.prgRom[bank][addr & 0x3fff];
     }
   }
 }
