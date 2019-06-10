@@ -151,8 +151,12 @@ export default class MMC1 {
     const mode = (this.control >> 2) & 3;
 
     if (mode == 0 || mode == 1) {
-      if (bank === 0) return this.prgRomBank & 0xe;
-      else if (bank === 1) return (this.prgRomBank & 0xe) + 1;
+      if (this.control & (0x10 > 0)) {
+        if (bank === 0) return this.prgRomBank & 0xe;
+        else if (bank === 1) return (this.prgRomBank & 0xe) + 1;
+      } else {
+        return this.prgRomBank;
+      }
     } else if (mode == 2) {
       if (bank === 0) return 0;
       else if (bank === 1) return this.prgRomBank;
@@ -170,6 +174,8 @@ export default class MMC1 {
       this.chrRxm[bank][addr & 0xfff] = val;
     } else if (addr < 0x6000) {
       throw new UnmappedAddressError(addr);
+    } else if (addr < 0x8000) {
+      this.prgRam[addr & 0x1fff] = val;
     } else {
       if (val & 0x80) {
         debug('reset control');
