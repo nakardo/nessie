@@ -19,7 +19,7 @@ export default class Ppu {
 
   ctrl = 0;
   mask = 0;
-  _stat = 0;
+  stat = 0;
   scroll = [0, 0]; // (x, y)
 
   t = 0;
@@ -30,15 +30,7 @@ export default class Ppu {
   latch = 0;
 
   constructor(cart) {
-    this.mem = new Memory(cart);
-  }
-
-  get stat() {
-    return this._stat;
-  }
-
-  set stat(stat) {
-    this._stat = this.mem.stat = stat;
+    this.mem = new Memory(cart, this);
   }
 
   step(cycles) {

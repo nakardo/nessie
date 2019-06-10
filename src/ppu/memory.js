@@ -2,18 +2,19 @@ import {UnmappedAddressError} from '../errors';
 
 export default class Memory {
   cart = null;
-  stat = 0;
+  ppu = null;
 
   vram = new Uint8Array(0x800);
   palette = new Uint8Array(0x20);
   addr = 0;
 
-  constructor(cart) {
+  constructor(cart, ppu) {
     this.cart = cart;
+    this.ppu = ppu;
   }
 
   increment() {
-    this.addr += (this.stat & 4) === 0 ? 1 : 0x20;
+    this.addr += (this.ppu.stat & 4) === 0 ? 1 : 0x20;
     this.addr &= 0x3fff;
   }
 
