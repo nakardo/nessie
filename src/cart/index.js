@@ -36,7 +36,7 @@ export default class Cart {
     assert((data[6] & 4) === 0, 'cart contains trainer data');
 
     const prgRomPagesCount = data[4];
-    const chrRxmPagesCount = data[5]; // 0 means the board uses chr-ram.
+    const chrRxmPagesCount = data[5];
 
     const mapper = (data[6] >> 4) | (data[7] & 0xf0);
     const Mapper = MAPPERS[mapper];
@@ -57,8 +57,12 @@ export default class Cart {
       size: 0x4000,
     });
 
+    let chrRxmData = new Array(0x2000);
+    if (chrRxmPagesCount > 0) {
+      chrRxmData = data.slice(0x10 + 0x4000 * prgRomPagesCount);
+    }
     this.chrRxm = Cart.createMemory({
-      data: data.slice(0x10 + 0x4000 * prgRomPagesCount),
+      data: chrRxmData, // 0 means the board uses chr-ram.
       pages: (chrRxmPagesCount || 1) << 1, // shift count to have 4kb banks.
       size: 0x1000,
     });
