@@ -151,7 +151,7 @@ export default class MMC1 {
     const mode = (this.control >> 2) & 3;
 
     if (mode == 0 || mode == 1) {
-      if (this.control & (0x10 > 0)) {
+      if ((this.control & 0x10) > 0) {
         if (bank === 0) return this.prgRomBank & 0xe;
         else if (bank === 1) return (this.prgRomBank & 0xe) + 1;
       } else {
@@ -194,6 +194,7 @@ export default class MMC1 {
         } else {
           this.prgRamEnable = (this.shift & 0x10) === 0;
           this.prgRomBank = this.shift & 0xf;
+          debug('changing prg-rom to: %d', this.prgRomBank);
         }
         this.shiftReset();
       }
