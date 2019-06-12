@@ -66,35 +66,36 @@ export default class MMC1 {
       this.prgRam[addr & 0x1fff] = val;
     } else {
       if (val & 0x80) {
-        debug('reset control');
+        debug('or control with 0xc');
+        this.prgRomBankMode = 3;
         this.shiftReset();
-        this.mirroring = 0;
-        this.prgRomBankMode = 0x2;
-        this.chrRxmBankMode = 0;
       } else if ((this.shift & 1) == 0) {
         this.shiftRight(val);
       } else {
         this.shiftRight(val);
-        const hnib = addr >> 12;
-        debug('writing register: %s, val: %s', hnib.to(16), this.shift.to(2));
+        debug(
+          'writing register: %s, val: %s',
+          (addr >> 12).to(16),
+          this.shift.to(2),
+        );
         if (addr < 0xa000) {
           this.mirroring = this.shift & 0x2;
           this.prgRomBankMode = (this.shift >> 2) & 0x2;
           this.chrRxmBankMode = (this.shift >> 3) & 1;
         } else if (addr < 0xe000) {
-          const index = (hnib >> 1) & 1;
+          const index = addr < 0xc000 ? 0 : 1;
           this.chrRxmBank[index] = this.shift;
           debug(
-            'changing chr-rxm[%d] to: %d, mode: %d',
+            'changing chr-rxm[%d] bank to: %d, mode: %d',
             index,
             this.shift,
             this.chrRxmBankMode,
           );
         } else {
-          this.prgRamEnable = (this.shift & 0x10) === 0;
+          this.prgRamEnable = (this.shift & 0x10) == 0;
           this.prgRomBank = this.shift & 0xf;
           debug(
-            'changing prg-rom to: %d, mode: %d',
+            'changing prg-rom bank to: %d, mode: %d',
             this.prgRomBank,
             this.prgRomBankMode,
           );
