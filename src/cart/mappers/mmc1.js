@@ -1,5 +1,4 @@
 import {debug as Debug} from 'debug';
-import {UnmappedAddressError} from '../../errors';
 
 const debug = Debug('nes:cart:mapper:mmc1');
 
@@ -127,7 +126,9 @@ export default class MMC1 {
   prgRomLastPage = 0;
 
   shift = 0b10000;
-  control = 0;
+  mirroring = 0;
+  prgRomBankMode = 0;
+  chrRxmBankMode = 0;
   chrRxmBank = [0, 0];
   prgRomBank = 0;
 
@@ -147,25 +148,19 @@ export default class MMC1 {
     this.shift |= (val & 1) << 4;
   }
 
-  getPrgRomBank(bank) {
-    const mode = (this.control >> 2) & 3;
-
+  getPrgRomBank(index) {
+    const mode = this.prgRomBankMode;
     if (mode == 0 || mode == 1) {
-      if ((this.control & 0x10) > 0) {
-        if (bank === 0) return this.prgRomBank & 0xe;
-        else if (bank === 1) return (this.prgRomBank & 0xe) + 1;
-      } else {
-        return this.prgRomBank;
-      }
-    } else if (mode == 2) {
-      if (bank === 0) return 0;
-      else if (bank === 1) return this.prgRomBank;
-    } else if (mode == 3) {
-      if (bank === 0) return this.prgRomBank;
-      else if (bank === 1) return this.prgRomLastPage;
+      const bank = this.prgRomBank & 0xe;
+      if (index === 0) return bank;
+      return bank | 1;
+    } else if (mode == 2 && index === 0) {
+      return 0;
+    } else if (mode == 3 && index === 1) {
+      return this.prgRomLastPage;
     }
 
-    throw new Error('unknown mode or prg-rom bank');
+    return this.prgRomBank;
   }
 
   w8({val, addr}) {
@@ -173,14 +168,16 @@ export default class MMC1 {
       const bank = this.chrRxmBank[(addr >> 12) & 1];
       this.chrRxm[bank][addr & 0xfff] = val;
     } else if (addr < 0x6000) {
-      throw new UnmappedAddressError(addr);
+      return 0;
     } else if (addr < 0x8000) {
       this.prgRam[addr & 0x1fff] = val;
     } else {
       if (val & 0x80) {
         debug('reset control');
         this.shiftReset();
-        this.control |= 0xc;
+        this.mirroring = 0;
+        this.prgRomBankMode = 0x2;
+        this.chrRxmBankMode = 0;
       } else if ((this.shift & 1) == 0) {
         this.shiftRight(val);
       } else {
@@ -188,13 +185,19 @@ export default class MMC1 {
         const hnib = addr >> 12;
         debug('writing register: %s, val: %s', hnib.to(16), this.shift.to(2));
         if (addr < 0xa000) {
-          this.control = this.shift;
+          this.mirroring = this.shift & 0x2;
+          this.prgRomBankMode = (this.shift >> 2) & 0x2;
+          this.chrRxmBankMode = (this.shift >> 3) & 1;
         } else if (addr < 0xe000) {
           this.chrRxmBank[(hnib >> 1) & 1] = this.shift;
         } else {
           this.prgRamEnable = (this.shift & 0x10) === 0;
           this.prgRomBank = this.shift & 0xf;
-          debug('changing prg-rom to: %d', this.prgRomBank);
+          debug(
+            'changing prg-rom to: %d, mode: %d',
+            this.prgRomBank,
+            this.prgRomBankMode,
+          );
         }
         this.shiftReset();
       }
@@ -206,7 +209,7 @@ export default class MMC1 {
       const bank = this.chrRxmBank[(addr >> 12) & 1];
       return this.chrRxm[bank][addr & 0xfff];
     } else if (addr < 0x6000) {
-      throw new UnmappedAddressError(addr);
+      return 0;
     } else if (addr < 0x8000) {
       return this.prgRam[addr & 0x1fff];
     } else {
