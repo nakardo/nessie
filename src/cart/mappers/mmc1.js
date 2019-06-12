@@ -31,15 +31,25 @@ export default class MMC1 {
     this.shift |= (val & 1) << 4;
   }
 
+  getChrRxmBank(index) {
+    if (this.chrRxmBankMode == 0) {
+      const bank = this.chrRxmBank[0] & 0x1e;
+      if (index == 0) return bank;
+      return bank | 1;
+    }
+
+    return this.chrRxmBank[index];
+  }
+
   getPrgRomBank(index) {
     const mode = this.prgRomBankMode;
     if (mode == 0 || mode == 1) {
       const bank = this.prgRomBank & 0xe;
-      if (index === 0) return bank;
+      if (index == 0) return bank;
       return bank | 1;
-    } else if (mode == 2 && index === 0) {
+    } else if (mode == 2 && index == 0) {
       return 0;
-    } else if (mode == 3 && index === 1) {
+    } else if (mode == 3 && index == 1) {
       return this.prgRomLastPage;
     }
 
@@ -48,7 +58,7 @@ export default class MMC1 {
 
   w8({val, addr}) {
     if (addr < 0x2000) {
-      const bank = this.chrRxmBank[(addr >> 12) & 1];
+      const bank = this.getChrRxmBank((addr >> 12) & 1);
       this.chrRxm[bank][addr & 0xfff] = val;
     } else if (addr < 0x6000) {
       return 0;
@@ -72,7 +82,14 @@ export default class MMC1 {
           this.prgRomBankMode = (this.shift >> 2) & 0x2;
           this.chrRxmBankMode = (this.shift >> 3) & 1;
         } else if (addr < 0xe000) {
-          this.chrRxmBank[(hnib >> 1) & 1] = this.shift;
+          const index = (hnib >> 1) & 1;
+          this.chrRxmBank[index] = this.shift;
+          debug(
+            'changing chr-rxm[%d] to: %d, mode: %d',
+            index,
+            this.shift,
+            this.chrRxmBankMode,
+          );
         } else {
           this.prgRamEnable = (this.shift & 0x10) === 0;
           this.prgRomBank = this.shift & 0xf;
@@ -89,7 +106,7 @@ export default class MMC1 {
 
   r8(addr) {
     if (addr < 0x2000) {
-      const bank = this.chrRxmBank[(addr >> 12) & 1];
+      const bank = this.getChrRxmBank((addr >> 12) & 1);
       return this.chrRxm[bank][addr & 0xfff];
     } else if (addr < 0x6000) {
       return 0;
