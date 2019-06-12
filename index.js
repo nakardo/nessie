@@ -21,12 +21,10 @@ const nes = new Nes();
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/13-rts.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/14-rti.nes'));
 // nes.loadCart(fs.readFileSync('./roms/instr_test-v5/rom_singles/15-brk.nes'));
-nes.loadCart(
-  fs.readFileSync('./roms/instr_test-v5/rom_singles/16-special.nes'),
-);
+// nes.loadCart(fs.readFilqeSync('./roms/instr_test-v5/rom_singles/16-special.nes'));
 //
 // All tests:
-// nes.loadCart(fs.readFileSync('./roms/instr_test-v5/official_only.nes'));
+nes.loadCart(fs.readFileSync('./roms/instr_test-v5/official_only.nes'));
 //
 // Roms:
 // nes.loadCart(fs.readFileSync('./roms/excitebike.nes'));
