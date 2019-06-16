@@ -33,7 +33,7 @@ export default class MMC1 {
 
   getChrRxmBank(index) {
     if (this.chrRxmBankMode == 0) {
-      const bank = this.chrRxmBank[0] & 0x1e;
+      const bank = this.chrRxmBank[0] * 2;
       if (index == 0) return bank;
       return bank | 1;
     }
@@ -44,7 +44,7 @@ export default class MMC1 {
   getPrgRomBank(index) {
     const mode = this.prgRomBankMode;
     if (mode == 0 || mode == 1) {
-      const bank = this.prgRomBank & 0xe;
+      const bank = (this.prgRomBank >> 1) * 2;
       if (index == 0) return bank;
       return bank | 1;
     } else if (mode == 2 && index == 0) {
