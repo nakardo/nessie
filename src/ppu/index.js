@@ -7,12 +7,14 @@ import Oam from './oam';
 const debug = Debug('nes:ppu');
 
 const SCANLINES_PER_FRAME = 262;
-const SCANLINE_CLOCK_CYCLES = 314;
-const PPUCTRL_IGNORE_WRITES_CYCLES = 30000;
+const SCANLINE_CLOCK_CYCLES = 341;
+const REG_WRITE_IGNORE_WRITES_CYCLES = 29658;
+const REG_WRITE_IGNORE = PPU.PPUCTRL | PPU.PPUMASK | PPU.PPUSCROLL;
 
 export default class Ppu {
   cpu = null;
   mem = null;
+  screen = null;
   oam = new Oam();
 
   // Registers
@@ -29,8 +31,9 @@ export default class Ppu {
   reset = true;
   latch = 0;
 
-  constructor(cart) {
+  constructor(cart, screen) {
     this.mem = new Memory(cart, this);
+    this.screen = screen;
   }
 
   step(cycles) {
@@ -40,34 +43,31 @@ export default class Ppu {
     // 30,000 cycles.
     if (this.reset) {
       this.resetCycles += cycles;
-      if (this.resetCycles > PPUCTRL_IGNORE_WRITES_CYCLES) {
+      if (this.resetCycles > REG_WRITE_IGNORE_WRITES_CYCLES) {
         this.resetCycles = 0;
         this.reset = false;
       }
     }
 
-    if (this.t > SCANLINE_CLOCK_CYCLES) {
-      this.t = 0;
-      this.scanline += 1;
-      if (this.scanline > SCANLINES_PER_FRAME) {
-        this.scanline = 0;
+    if (this.t < SCANLINE_CLOCK_CYCLES) {
+      return;
+    }
+
+    if (this.scanline < 240) {
+      this.stat &= ~0x80;
+      this.screen.drawLine(this.scanline);
+    } else if (this.scanline === 241) {
+      this.stat |= 0x80;
+      if (this.ctrl & 0x80) {
+        this.cpu.nmi = true;
       }
     }
 
-    if (this.scanline === 241) {
-      // TODO:
-      // Vertical blank has started (0: not in vblank; 1: in vblank).
-      // Set at dot 1 of line 241 (the line *after* the post-render
-      // line); cleared after reading $2002 and at dot 1 of the
-      // pre-render line.
-      this.stat |= 0x80;
+    this.scanline += 1;
+    if (this.scanline > SCANLINES_PER_FRAME) {
+      this.scanline = 0;
     }
-
-    // OAMADDR is set to 0 during each of ticks 257-320 (the sprite tile
-    // loading interval) of the pre-render and visible scanlines.
-    if (this.scanline >= 257 && this.scanline <= 320) {
-      this.oam.addr = 0;
-    }
+    this.t = 0;
   }
 
   r8(addr) {
@@ -107,18 +107,15 @@ export default class Ppu {
     debug('write at: %s, val: %s', addr.to(16, 2), val.to(16));
     this.latch = val;
 
-    switch (0x2000 | (addr & 0x7)) {
-      case PPU.PPUCTRL:
-        if (this.reset) {
-          debug('writing ppuctrl while writes ignored');
-          return;
-        }
-        this.ctrl = val;
+    const reg = 0x2000 | (addr & 0x7);
+    if (this.reset && reg & REG_WRITE_IGNORE) {
+      debug('writing to: %s while writes ignored', reg.to(16, 2));
+      return;
+    }
 
-        // we're in vblank period and generate nmi on vblank is enabled.
-        if (this.ctrl & this.stat & 0x80) {
-          this.cpu.nmi = true;
-        }
+    switch (reg) {
+      case PPU.PPUCTRL:
+        this.ctrl = val;
         return;
       case PPU.PPUMASK:
         this.mask = val;
@@ -137,7 +134,7 @@ export default class Ppu {
         this.scroll[this.writeCount++] = val;
         this.writeCount &= 1;
         return;
-      case PPU.PPUADDR: {
+      case PPU.PPUADDR:
         if (this.writeCount === 0) {
           this.mem.addr &= ~0xf0;
           this.mem.addr |= val << 4;
@@ -149,7 +146,6 @@ export default class Ppu {
         this.writeCount++;
         this.writeCount &= 1;
         return;
-      }
       case PPU.PPUDATA:
         this.mem.w8(val);
         return;
