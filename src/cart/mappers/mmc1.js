@@ -8,7 +8,9 @@ export default class MMC1 {
   chrRxm = null;
   prgRomLastPage = 0;
 
-  shift = 0b10000;
+  shift = 0;
+  shiftCount = 0;
+
   mirroring = 0;
   prgRomBankMode = 0;
   chrRxmBankMode = 0;
@@ -23,12 +25,14 @@ export default class MMC1 {
   }
 
   shiftReset() {
-    this.shift = 0b10000;
+    this.shift = 0;
+    this.shiftCount = 0;
   }
 
   shiftRight(val) {
     this.shift >>= 1;
     this.shift |= (val & 1) << 4;
+    this.shiftCount++;
   }
 
   getChrRxmBank(index) {
@@ -69,17 +73,17 @@ export default class MMC1 {
         debug('set control |= 0xc');
         this.prgRomBankMode = 3;
         this.shiftReset();
-      } else if ((this.shift & 1) == 0) {
+      } else if (this.shiftCount < 4) {
         this.shiftRight(val);
-      } else {
+      } else if (this.shiftCount === 4) {
         const hnib = addr >> 12;
         this.shiftRight(val);
         debug('set register: %s, val: %s', hnib.to(16), this.shift.to(2));
         if (addr < 0xa000) {
           debug('set control: %s', this.shift.to(2));
-          this.mirroring = this.shift & 0x2;
-          this.prgRomBankMode = (this.shift >> 2) & 0x2;
-          this.chrRxmBankMode = (this.shift >> 3) & 1;
+          this.mirroring = this.shift & 3;
+          this.prgRomBankMode = (this.shift >> 2) & 3;
+          this.chrRxmBankMode = (this.shift >> 4) & 1;
         } else if (addr < 0xe000) {
           const index = addr < 0xc000 ? 0 : 1;
           this.chrRxmBank[index] = this.shift;
@@ -90,6 +94,8 @@ export default class MMC1 {
           debug('set bank prg-rom: %d', this.prgRomBank);
         }
         this.shiftReset();
+      } else {
+        throw new Error('unhandled register write');
       }
     }
   }
