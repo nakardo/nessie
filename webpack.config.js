@@ -7,8 +7,10 @@ module.exports = {
   entry: './src/nes.js',
   mode: 'development',
   output: {
-    filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+    library: 'Nes',
+    libraryTarget: 'window',
   },
   plugins: [new CleanWebpackPlugin(['dist'])],
   module: {
