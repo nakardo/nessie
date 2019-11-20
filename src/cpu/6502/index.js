@@ -53,36 +53,29 @@ export default class MOS6502 {
     return this.pull8() | (this.pull8() << 8);
   }
 
-  sign(val) {
-    if (val !== undefined) {
-      if ((val & 0x80) > 0) this.stat |= FLAG.SIGN;
-      else this.stat &= ~FLAG.SIGN;
-    }
-    return !!(this.stat & FLAG.SIGN);
-  }
+  /**
+   * Status flags
+   * See: https://wiki.nesdev.com/w/index.php/Status_flags
+   *
+   * 7  bit  0
+   * ---- ----
+   * NVss DIZC
+   * |||| ||||
+   * |||| |||+- Carry
+   * |||| ||+-- Zero
+   * |||| |+--- Interrupt Disable
+   * |||| +---- Decimal
+   * ||++------ No CPU effect, see: the B flag
+   * |+-------- Overflow
+   * +--------- Negative
+   */
 
-  overflow(cond) {
+  carry(cond) {
     if (cond !== undefined) {
-      if (cond) this.stat |= FLAG.OVERFLOW;
-      else this.stat &= ~FLAG.OVERFLOW;
+      if (cond) this.stat |= FLAG.CARRY;
+      else this.stat &= ~FLAG.CARRY;
     }
-    return !!(this.stat & FLAG.OVERFLOW);
-  }
-
-  decimal(cond) {
-    if (cond !== undefined) {
-      if (cond) this.stat |= FLAG.DECIMAL;
-      else this.stat &= ~FLAG.DECIMAL;
-    }
-    return !!(this.stat & FLAG.DECIMAL);
-  }
-
-  interrupt(cond) {
-    if (cond !== undefined) {
-      if (cond) this.stat |= FLAG.INTERRUPT;
-      else this.stat &= ~FLAG.INTERRUPT;
-    }
-    return !!(this.stat & FLAG.INTERRUPT);
+    return !!(this.stat & FLAG.CARRY);
   }
 
   zero(val) {
@@ -93,12 +86,37 @@ export default class MOS6502 {
     return !!(this.stat & FLAG.ZERO);
   }
 
-  carry(cond) {
+  interrupt(cond) {
     if (cond !== undefined) {
-      if (cond) this.stat |= FLAG.CARRY;
-      else this.stat &= ~FLAG.CARRY;
+      if (cond) this.stat |= FLAG.INTERRUPT;
+      else this.stat &= ~FLAG.INTERRUPT;
+      throw new Error();
     }
-    return !!(this.stat & FLAG.CARRY);
+    return !!(this.stat & FLAG.INTERRUPT);
+  }
+
+  decimal(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG.DECIMAL;
+      else this.stat &= ~FLAG.DECIMAL;
+    }
+    return !!(this.stat & FLAG.DECIMAL);
+  }
+
+  overflow(cond) {
+    if (cond !== undefined) {
+      if (cond) this.stat |= FLAG.OVERFLOW;
+      else this.stat &= ~FLAG.OVERFLOW;
+    }
+    return !!(this.stat & FLAG.OVERFLOW);
+  }
+
+  sign(val) {
+    if (val !== undefined) {
+      if ((val & 0x80) > 0) this.stat |= FLAG.SIGN;
+      else this.stat &= ~FLAG.SIGN;
+    }
+    return !!(this.stat & FLAG.SIGN);
   }
 
   reset() {
