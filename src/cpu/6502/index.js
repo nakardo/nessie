@@ -23,6 +23,7 @@ export default class MOS6502 {
   // - also revisit instructions listed.
   irq = false;
   nmi = false;
+  brk = false;
 
   constructor(mem) {
     this.mem = mem;
@@ -90,7 +91,6 @@ export default class MOS6502 {
     if (cond !== undefined) {
       if (cond) this.stat |= FLAG.INTERRUPT;
       else this.stat &= ~FLAG.INTERRUPT;
-      throw new Error();
     }
     return !!(this.stat & FLAG.INTERRUPT);
   }
@@ -132,23 +132,29 @@ export default class MOS6502 {
   }
 
   handleInterrupts() {
-    if (!this.nmi || !this.interrupt()) return;
+    let status = this.stat;
 
     let vector;
     if (this.nmi) {
       vector = INT.NMI_ADDR;
+      status = (status | (1 << 5)) & ~(1 << 4);
       this.nmi = false;
-    } else if (this.irq) {
+    } else if (this.irq && !this.interrupt()) {
       vector = INT.IRQ_BRK_ADDR;
+      status = (status | (1 << 5)) & ~(1 << 4);
       this.irq = false;
-    } else if (this.break()) {
+      this.interrupt(true);
+    } else if (this.brk) {
       vector = INT.IRQ_BRK_ADDR;
-      this.break(false);
+      status |= 0b110000; // Set bits 5 and 4.
+      this.brk = false;
+      this.interrupt(true);
+    } else {
+      return;
     }
 
     this.push16(this.pc);
-    this.push8(this.stat);
-    this.interrupt(false);
+    this.push8(status);
     this.pc = this.mem.r16(vector);
     this.cycles += 7;
 

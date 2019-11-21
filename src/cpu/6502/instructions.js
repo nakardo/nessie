@@ -1,5 +1,3 @@
-import {IRQ_BRK_ADDR} from './interrupts';
-
 function branch({branchCycles, cpu, mem, addr}, cond) {
   if (cond) {
     addr = cpu.pc + mem.r8(addr).signed();
@@ -294,11 +292,8 @@ export const bpl = ({cpu, ...inst}) => branch({...inst, cpu}, !cpu.sign());
  * +----------------+-----------------------+---------+---------+----------+
  * 1. A BRK command cannot be masked by setting I.
  */
-export function brk({cpu, mem}) {
-  cpu.push16(cpu.pc + 1);
-  cpu.push8(cpu.stat | 0b110000); // Set bits 5 and 4.
-  cpu.interrupt(true);
-  cpu.pc = mem.r16(IRQ_BRK_ADDR);
+export function brk({cpu}) {
+  cpu.brk = true;
 }
 
 /**
