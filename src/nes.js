@@ -24,7 +24,7 @@ export default class Nes {
 
   loadCart(buf) {
     debug('loading cart');
-    this.cart.load(Uint8Array.from(buf));
+    this.cart.load(new Uint8Array(buf));
   }
 
   runFrame() {
