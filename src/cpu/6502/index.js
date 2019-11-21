@@ -18,9 +18,6 @@ export default class MOS6502 {
   pc = 0;
   sp = 0;
   cycles = 0;
-  // TODO(nakardo): update flag behavior with this:
-  // - https://wiki.nesdev.com/w/index.php/CPU_status_flag_behavior
-  // - also revisit instructions listed.
   irq = false;
   nmi = false;
   brk = false;
@@ -53,23 +50,6 @@ export default class MOS6502 {
   pull16() {
     return this.pull8() | (this.pull8() << 8);
   }
-
-  /**
-   * Status flags
-   * See: https://wiki.nesdev.com/w/index.php/Status_flags
-   *
-   * 7  bit  0
-   * ---- ----
-   * NVss DIZC
-   * |||| ||||
-   * |||| |||+- Carry
-   * |||| ||+-- Zero
-   * |||| |+--- Interrupt Disable
-   * |||| +---- Decimal
-   * ||++------ No CPU effect, see: the B flag
-   * |+-------- Overflow
-   * +--------- Negative
-   */
 
   carry(cond) {
     if (cond !== undefined) {
