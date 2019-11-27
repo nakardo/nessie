@@ -73,8 +73,8 @@ const combine = (...fns) =>
     fns.forEach(fn => fn(inst));
   };
 
-function unknown({opcode}) {
-  throw new Error(`Unimplemented opcode: ${opcode.to(16)}`);
+function unknown({opcode, cpu}) {
+  throw new Error(`Invalid opcode: ${opcode.to(16)} at ${cpu.pc.to(16, 2)}`);
 }
 
 // Official opcodes

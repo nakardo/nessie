@@ -37,8 +37,8 @@ export default class MMC1 {
 
   getChrRxmBank(index) {
     if (this.chrRxmBankMode == 0) {
-      if (index == 0) return this.chrRxmBank[0] & ~1;
-      else return this.chrRxmBank[0] | 1;
+      if (index == 0) return this.chrRxmBank[0] & 0xfe;
+      else return this.chrRxmBank[1] | 1;
     } else {
       return this.chrRxmBank[index];
     }
@@ -47,7 +47,7 @@ export default class MMC1 {
   getPrgRomBank(index) {
     const mode = this.prgRomBankMode;
     if (mode == 0 || mode == 1) {
-      if (index == 0) return this.prgRomBank & ~1;
+      if (index == 0) return this.prgRomBank & 0xfe;
       else return this.prgRomBank | 1;
     } else if (mode == 2) {
       if (index == 0) return 0;
@@ -74,6 +74,7 @@ export default class MMC1 {
       this.prgRamEnable = (this.shift & 0x10) == 0;
       this.prgRomBank = this.shift & 0xf;
       debug('set bank prg-rom: %d', this.prgRomBank);
+      debug('prg-ram enable', this.prgRamEnable);
     }
   }
 
@@ -84,7 +85,9 @@ export default class MMC1 {
     } else if (addr < 0x6000) {
       return;
     } else if (addr < 0x8000) {
-      this.prgRam[addr & 0x1fff] = val;
+      if (this.prgRamEnable) {
+        this.prgRam[addr & 0x1fff] = val;
+      }
     } else {
       if (val & 0x80) {
         debug('reset control');

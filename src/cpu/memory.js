@@ -42,6 +42,8 @@ export default class Memory {
     assert(typeof addr === 'number', 'invalid address');
     addr &= 0xffff;
 
+    debug('read at: %s', addr.to(16, 2));
+
     switch (addr >> 12) {
       case 0x0:
       case 0x1:
@@ -86,7 +88,8 @@ export default class Memory {
           return;
         } else if (addr < 0x6004) {
           test('%s: %s', addr.to(16), val.to(16));
-          if (addr == 0x6000 && val != 0x80 && val > 0) {
+          if (addr == 0x6000 && val != 0x80) {
+            if (val === 0) process.exit(0);
             test('invalid result code: %s', val.to(16));
             process.exit(1);
           }
