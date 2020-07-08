@@ -1,0 +1,1 @@
+Number.prototype.to = function () {};
