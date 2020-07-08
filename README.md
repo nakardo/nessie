@@ -20,7 +20,7 @@ There's plenty of great OSS emulators, more stable and with wider support if tha
 | Directions | Arrow Keys |
 | B          | Z          |
 | A          | X          |
-| Select     | Left Shift |
+| Select     | Shift      |
 | Start      | Enter      |
 
 ### Usage

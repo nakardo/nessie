@@ -8,7 +8,8 @@
     "start": "webpack-dev-server --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js",
     "lint": "eslint '**/*.js'",
-    "pretty": "prettier --write '**/*.{js,json}'"
+    "pretty": "prettier --write '**/*.{js,json}'",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "canvas": "^2.6.1",
@@ -51,5 +52,23 @@
       "eslint --fix"
     ],
     "**/*.json": "prettier --write"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nakardo/nessie.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nakardo/nessie/issues"
+  },
+  "homepage": "https://github.com/nakardo/nessie#readme",
+  "engines": {
+    "node": ">=12"
+  },
+  "directories": {
+    "example": "examples"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }
