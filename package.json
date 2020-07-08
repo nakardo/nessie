@@ -4,6 +4,12 @@
   "description": "A NES emulator written in JavaScript",
   "license": "MIT",
   "author": "Diego Acosta <diegonake@gmail.com>",
+  "keywords": [
+    "nintendo",
+    "nes",
+    "emulator"
+  ],
+  "main": "src/nes.js",
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js",
