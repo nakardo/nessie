@@ -1,7 +1,7 @@
 {
   "name": "nessie",
   "version": "0.0.4",
-  "description": "A NES emulator written in JavaScript",
+  "description": "An NES emulator written in JavaScript",
   "license": "MIT",
   "author": "Diego Acosta <diegonake@gmail.com>",
   "keywords": [

@@ -1,8 +1,8 @@
 # 🦕
 
-Nessie is NES emulator written in JavaScript which runs both server side or the browser. Nessie is currently WIP and aimed at learning, not focused on accuracy or supporting most of the NES romset.
+Nessie is an NES emulator written in JavaScript which runs both server side or the browser. Nessie is currently WIP and aimed at learning, not focused on accuracy or compatibility with most of the NES romset.
 
-There's plenty of great OSS emulators, more stable and with wider support if that's what you're looking for. Here's some that Nessie got inspired from:
+There's plenty of great OSS emulators, more stable and with wider support if that's what you're looking for. Here's some that Nessie got inspired by:
 
 - https://github.com/bfirsh/jsnes
 - https://github.com/fogleman/nes
@@ -20,8 +20,8 @@ There's plenty of great OSS emulators, more stable and with wider support if tha
 | Directions | Arrow Keys |
 | B          | Z          |
 | A          | X          |
-| Select     | Shift      |
 | Start      | Enter      |
+| Select     | Shift      |
 
 ### Usage
 
