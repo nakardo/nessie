@@ -8,14 +8,14 @@ const BUTTON_LEFT = 6;
 const BUTTON_RIGHT = 7;
 
 const keys = {
-  '40': BUTTON_DOWN,
-  '13': BUTTON_START,
-  '38': BUTTON_UP,
-  '16': BUTTON_SELECT,
-  '37': BUTTON_LEFT,
-  '90': BUTTON_B,
-  '39': BUTTON_RIGHT,
-  '88': BUTTON_A,
+  40: BUTTON_DOWN,
+  13: BUTTON_START,
+  38: BUTTON_UP,
+  16: BUTTON_SELECT,
+  37: BUTTON_LEFT,
+  90: BUTTON_B,
+  39: BUTTON_RIGHT,
+  88: BUTTON_A,
 };
 
 export default class Controller {

@@ -15,6 +15,11 @@ module.exports = {
   },
   plugins: [
     new webpack.ProgressPlugin(),
+    new webpack.ProvidePlugin({process: 'process/browser'}),
+    new webpack.NormalModuleReplacementPlugin(
+      /.*assert$/,
+      path.resolve(__dirname, 'src/shims/assert.js'),
+    ),
     new webpack.NormalModuleReplacementPlugin(
       /.*number$/,
       path.resolve(__dirname, 'src/shims/number.js'),
