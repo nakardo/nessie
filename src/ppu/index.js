@@ -18,16 +18,37 @@ export default class Ppu {
   ctrl = 0;
   mask = 0;
   stat = 0;
-  scroll = [0, 0]; // (x, y)
+
+  /**
+   * PPU Scrolling
+   *
+   * The PPU uses the current VRAM address for both reading and writing PPU
+   * memory thru $2007, and for fetching nametable data to draw the background.
+   * As it's drawing the background, it updates the address to point to the
+   * nametable data currently being drawn. Bits 10-11 hold the base address of
+   * the nametable minus $2000. Bits 12-14 are the Y offset of a scanline
+   * within a tile.
+   *
+   * The 15 bit registers t and v are composed this way during rendering:
+   *
+   * yyy NN YYYYY XXXXX
+   * ||| || ||||| +++++-- coarse X scroll
+   * ||| || +++++-------- coarse Y scroll
+   * ||| ++-------------- nametable select
+   * +++----------------- fine Y scroll
+   */
+  v = 0; // Current VRAM address (15 bits)
+  t = 0; // Temporary VRAM address (15 bits); can also be thought of as the
+  // address of the top left onscreen tile.
+  x = 0; // Fine X scroll (3 bits)
+  w = 0; // First or second write toggle (1 bit)
 
   scanline = 241;
   cycles = 0;
   resetCycles = 0;
   resetIgnoreWrites = true;
-  writeCount = 0;
   latch = 0;
   oamAddr = 0;
-  vramAddr = 0;
 
   renderFrame = false;
   isOddFrame = true;
@@ -42,21 +63,48 @@ export default class Ppu {
     this.ctrl = 0;
     this.mask = 0;
     this.stat &= 0x80;
-    this.scroll = [0, 0];
+    this.v = 0;
+    this.t = 0;
+    this.x = 0;
+    this.w = 0;
     this.cycles = 0;
     this.scanline = 0;
     this.resetCycles = 0;
     this.resetIgnoreWrites = true;
-    this.writeCount = 0;
     this.latch = 0;
-    this.vramAddr = 0;
     this.renderFrame = false;
     this.isOddFrame = false;
   }
 
   incrementVramAddress() {
-    this.vramAddr += (this.ctrl & 4) === 0 ? 1 : 0x20;
-    this.vramAddr &= 0x3fff;
+    this.v += (this.ctrl & 4) === 0 ? 1 : 0x20;
+    this.v &= 0x3fff;
+  }
+
+  incrementY() {
+    if ((this.v & 0x7000) != 0x7000) {
+      this.v += 0x1000; // increment fine Y
+    } else {
+      this.v &= ~0x7000; // fine Y = 0
+      let y = (this.v & 0x03e0) >> 5; // let y = coarse Y
+      if (y == 29) {
+        y = 0; // coarse Y = 0
+        this.v ^= 0x0800; // switch vertical nametable
+      } else if (y == 31) {
+        y = 0; // coarse Y = 0, nametable not switched
+      } else {
+        y += 1; // increment coarse Y
+        this.v = (this.v & ~0x03e0) | (y << 5); // put coarse Y back into v
+      }
+    }
+  }
+
+  copyX() {
+    this.v = (this.v & 0xfbe0) | (this.t & 0x41f);
+  }
+
+  copyY() {
+    this.v
   }
 
   step() {
@@ -70,6 +118,20 @@ export default class Ppu {
       }
     }
 
+    if (this.mask & 0x18) { // rendering enabled.
+      if (this.cycles == 256) {
+        this.incrementY();
+      } else if (this.cycles == 257) {
+        this.copyX();
+      } else if (this.scanline == 261) {
+        if (this.cycles >= 280 && this.cycles <= 304) {
+          this.copyY();
+        } else if (this.cycles == 339 && this.isOddFrame) {
+          this.cycles++;
+        }
+      }
+    }
+
     if (this.cycles == 1) {
       if (this.scanline == 241) {
         this.nes.cpu.nmi = (this.ctrl & 0x80) > 0;
@@ -77,16 +139,7 @@ export default class Ppu {
       } else if (this.scanline == 261) {
         this.stat &= ~0xe0;
       }
-    } else if (
-      this.cycles == 339 &&
-      this.scanline == 261 &&
-      this.isOddFrame &&
-      this.mask & 0x18
-    ) {
-      this.cycles++;
-    }
-
-    if (this.cycles == 340) {
+    } else if (this.cycles == 340) {
       this.renderScanline();
       this.isOddFrame = !this.isOddFrame;
       this.cycles = -1;
@@ -115,7 +168,8 @@ export default class Ppu {
         // clear the sprite 0 hit or overflow bit.
         const stat = this.stat;
         this.stat &= ~0x80;
-        this.writeCount = 0;
+        // w:                  = 0
+        this.w = 0;
         this.latch = (stat & 0xe0) | (this.latch & 0x1f);
         break;
       }
@@ -126,7 +180,7 @@ export default class Ppu {
         this.latch = this.oam[this.oamAddr];
         break;
       case PPU.PPUDATA:
-        this.latch = this.mem.r8({addr: this.vramAddr});
+        this.latch = this.mem.r8({addr: this.v});
         this.incrementVramAddress();
         break;
       case PPU.PPUCTRL:
@@ -163,6 +217,8 @@ export default class Ppu {
 
     switch (reg) {
       case PPU.PPUCTRL:
+        // t: ...BA.. ........ = d: ......BA
+        this.t = (this.t & 0xf3ff) | ((val & 3) << 10);
         this.ctrl = val;
         return;
       case PPU.PPUMASK:
@@ -178,25 +234,37 @@ export default class Ppu {
         return;
       }
       case PPU.PPUSCROLL:
-        // Horizontal offsets range from 0 to 255. "Normal" vertical offsets
-        // range from 0 to 239, while values of 240 to 255 are treated as -16
-        // through -1 in a way, but tile data is incorrectly fetched from the
-        // attribute table.
-        this.scroll[this.writeCount++] = val;
-        this.writeCount &= 1;
+        if (this.w == 0) {
+          // t: ....... ...HGFED = d: HGFED...
+          // x:              CBA = d: .....CBA
+          // w:                  = 1
+          this.t = (this.t & 0xffe0) | ((val & 0xf8) >> 3);
+          this.x = val & 6;
+        } else {
+          // t: CBA..HG FED..... = d: HGFEDCBA
+          // w:                  = 0
+          this.t &= 0xfc1f;
+          this.t |= ((val & 7) << 12) | ((val & 0xf8) << 2);
+        }
+        this.w ^= 1;
         return;
       case PPU.PPUADDR:
-        if (this.writeCount === 0) {
-          this.vramAddr = val << 8;
+        if (this.w == 0) {
+          // t: .FEDCBA ........ = d: ..FEDCBA
+          // t: X...... ........ = 0
+          // w:                  = 1
+          this.t = (this.t & 0x80ff) | (val & 0x3f);
         } else {
-          this.vramAddr |= val;
+          // t: ....... HGFEDCBA = d: HGFEDCBA
+          // v                   = t
+          // w:                  = 0
+          this.t = (this.t & 0xff00) | val;
+          this.v = this.t;
         }
-        this.vramAddr &= 0x3fff;
-        this.writeCount++;
-        this.writeCount &= 1;
+        this.w ^= 1;
         return;
       case PPU.PPUDATA:
-        this.mem.w8({val, addr: this.vramAddr});
+        this.mem.w8({val, addr: this.v});
         this.incrementVramAddress();
         return;
       default:

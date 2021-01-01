@@ -16,6 +16,8 @@ export default class Memory {
   }
 
   r8(addr) {
+    addr &= 0x3fff;
+
     switch (addr >> 12) {
       case 0x0:
       case 0x1:
@@ -35,6 +37,8 @@ export default class Memory {
   }
 
   w8({val, addr}) {
+    addr &= 0x3fff;
+
     switch (addr >> 12) {
       case 0x0:
       case 0x1: {
