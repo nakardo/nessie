@@ -65,3 +65,4 @@ typings/
 
 # generated files
 examples/gif-encoder/out.gif
+dist
