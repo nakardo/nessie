@@ -9,6 +9,15 @@ const nes = new Nes({
   },
 });
 
+document.getElementById('fullscreen').addEventListener('click', () => {
+  (
+    canvas.requestFullscreen ||
+    canvas.mozRequestFullScreen ||
+    canvas.webkitRequestFullscreen ||
+    canvas.msRequestFullscreen
+  ).call(canvas);
+});
+
 // Buttons
 document.getElementById('input').addEventListener('change', (evt) => {
   evt.currentTarget.focus();
