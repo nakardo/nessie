@@ -11,11 +11,15 @@ const nes = new Nes({
 
 // Buttons
 document.getElementById('input').addEventListener('change', (evt) => {
+  evt.currentTarget.focus();
+  evt.currentTarget.blur();
+
   const files = evt.target.files;
   if (!files.length) return;
 
   const reader = new FileReader();
   reader.onloadend = () => {
+    nes.reset();
     nes.loadCart(reader.result);
     nes.start();
   };

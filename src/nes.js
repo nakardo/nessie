@@ -58,11 +58,18 @@ export default class Nes {
     this.frameCycles = 0;
   }
 
-  start() {
-    debug('start');
-    this.cpu.reset();
+  reset() {
+    debug('reset');
+    raf.cancel(this.loop);
+    this.frameCycles = 0;
+    this.frameCount = 0;
+    this.fps = 0;
+    if (this.cart.loaded) this.cpu.reset();
     this.ppu.reset();
+  }
 
+  start() {
+    this.reset();
     let lastTime = now();
     const loop = () => {
       const currentTime = now();
