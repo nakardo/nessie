@@ -11,9 +11,6 @@ module.exports = merge(common, {
   devServer: {
     open: true,
   },
-  externals: {
-    $: 'jquery',
-  },
   plugins: [
     new HtmlWebpackPlugin({
       title: 'nessie',
