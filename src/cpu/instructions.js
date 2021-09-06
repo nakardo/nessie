@@ -951,8 +951,7 @@ export function rts(cpu) {
  * * Add 1 when page boundary is crossed.
  */
 export function sbc(cpu, mem, addr) {
-  const val = mem.r8(addr) ^ 0xff;
-  addWithCarry(cpu, val);
+  addWithCarry(cpu, mem.r8(addr) ^ 0xff);
 }
 
 /**
