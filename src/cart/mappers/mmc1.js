@@ -80,7 +80,7 @@ export default class MMC1 {
     }
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     if (addr < 0x2000) {
       const bank = this.getChrRxmBank((addr >> 12) & 1);
       this.chrRxm[bank][addr & 0xfff] = val;

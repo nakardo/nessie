@@ -34,13 +34,13 @@ export default class Memory {
     throw new UnmappedAddressError(addr);
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     switch (addr >> 12) {
       case 0x0:
       case 0x1: {
         const table = (addr >> 12) & 1;
-        this.nes.video.updatePattern({table, val, addr});
-        this.nes.cart.w8({val, addr});
+        this.nes.video.updatePattern(table, val, addr);
+        this.nes.cart.w8(val, addr);
         return;
       }
       case 0x2:

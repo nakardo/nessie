@@ -59,7 +59,7 @@ export default class Video {
     Object.seal(this);
   }
 
-  updatePattern({table, val, addr}) {
+  updatePattern(table, val, addr) {
     const row = this.pattern[table][(addr >> 4) & 0xff][addr & 7];
     const plane = (addr >> 3) & 1;
     for (let i = 0; i < row.length; i++) {

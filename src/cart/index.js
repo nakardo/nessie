@@ -76,7 +76,7 @@ export default class Cart {
     });
     this.chrRxm.forEach((chrRxm, table) => {
       chrRxm.forEach((val, addr) =>
-        this.nes.video.updatePattern({table, val, addr}),
+        this.nes.video.updatePattern(table, val, addr),
       );
     });
 
@@ -94,8 +94,8 @@ export default class Cart {
     return this.mapper.r8(addr);
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     assert(this.loaded, 'cart not loaded');
-    return this.mapper.w8({val, addr});
+    return this.mapper.w8(val, addr);
   }
 }

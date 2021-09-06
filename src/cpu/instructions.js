@@ -68,7 +68,7 @@ const andWithHighByte = (reg, idx) => {
     }
 
     const val = cpu[reg] & (haddr + 1);
-    mem.w8({val, addr});
+    mem.w8(val, addr);
   };
 };
 
@@ -83,7 +83,7 @@ const transfer = (from, to) => {
 
 const combine = (...fns) => {
   return function combine(cpu, mem, addr) {
-    fns.forEach((fn) => fn(cpu, mem, addr));
+    for (let i = 0; i < fns.length; i++) fns[i](cpu, mem, addr);
   };
 };
 
@@ -174,7 +174,7 @@ export function asl(cpu, mem, addr) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
-    mem.w8({val, addr});
+    mem.w8(val, addr);
   }
 }
 
@@ -479,7 +479,7 @@ export function dec(cpu, mem, addr) {
   const val = mem.r8(addr) - 1;
   cpu.sign(val);
   cpu.zero(val);
-  mem.w8({val, addr});
+  mem.w8(val, addr);
 }
 
 /**
@@ -555,7 +555,7 @@ export function inc(cpu, mem, addr) {
   const val = mem.r8(addr) + 1;
   cpu.sign(val);
   cpu.zero(val);
-  mem.w8({val, addr});
+  mem.w8(val, addr);
 }
 
 /**
@@ -708,7 +708,7 @@ export function lsr(cpu, mem, addr) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
-    mem.w8({val, addr});
+    mem.w8(val, addr);
   }
 }
 
@@ -853,7 +853,7 @@ export function rol(cpu, mem, addr) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
-    mem.w8({val, addr});
+    mem.w8(val, addr);
   }
 }
 
@@ -895,7 +895,7 @@ export function ror(cpu, mem, addr) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
-    mem.w8({val, addr});
+    mem.w8(val, addr);
   }
 }
 
@@ -1020,7 +1020,7 @@ export function sei(cpu) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function sta(cpu, mem, addr) {
-  mem.w8({val: cpu.a, addr});
+  mem.w8(cpu.a, addr);
 }
 
 /**
@@ -1038,7 +1038,7 @@ export function sta(cpu, mem, addr) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function stx(cpu, mem, addr) {
-  mem.w8({val: cpu.x, addr});
+  mem.w8(cpu.x, addr);
 }
 
 /**
@@ -1056,7 +1056,7 @@ export function stx(cpu, mem, addr) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function sty(cpu, mem, addr) {
-  mem.w8({val: cpu.y, addr});
+  mem.w8(cpu.y, addr);
 }
 
 /**
@@ -1175,7 +1175,7 @@ export function anc(cpu, mem, addr) {
  * Absolute    |AAX arg    |$8F| 3 | 4.
  */
 export function sax(cpu, mem, addr) {
-  mem.w8({val: cpu.a & cpu.x, addr});
+  mem.w8(cpu.a & cpu.x, addr);
 }
 
 /**
@@ -1234,7 +1234,7 @@ export function alr(cpu, mem, addr) {
  * (Indirect),Y|AXA arg    |$93| 2 | 6
  */
 export function ahx(cpu, mem, addr) {
-  mem.w8({val: cpu.x & cpu.a & 7, addr});
+  mem.w8(cpu.x & cpu.a & 7, addr);
 }
 
 /**
@@ -1487,5 +1487,5 @@ export function tas(cpu, mem, addr) {
   cpu.sp = cpu.x & cpu.a;
   let val = (mem.r8(addr) >> 4) + 1;
   val &= cpu.sp;
-  mem.w8({val, addr});
+  mem.w8(val, addr);
 }

@@ -126,7 +126,7 @@ export default class Ppu {
         this.latch = this.oam[this.oamAddr];
         break;
       case PPU.PPUDATA:
-        this.latch = this.mem.r8({addr: this.vramAddr});
+        this.latch = this.mem.r8(this.vramAddr);
         this.incrementVramAddress();
         break;
       case PPU.PPUCTRL:
@@ -141,7 +141,7 @@ export default class Ppu {
     return this.latch;
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     const reg = addr & 0xf007;
     if (this.resetIgnoreWrites && reg & REG_WRITE_IGNORE) {
       debug('write at: %s ignored', reg.to(16, 2));
@@ -196,7 +196,7 @@ export default class Ppu {
         this.writeCount &= 1;
         return;
       case PPU.PPUDATA:
-        this.mem.w8({val, addr: this.vramAddr});
+        this.mem.w8(val, this.vramAddr);
         this.incrementVramAddress();
         return;
       default:

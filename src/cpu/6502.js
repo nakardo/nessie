@@ -36,7 +36,7 @@ export default class MOS6502 {
     val &= 0xff;
     const addr = 0x100 | this.sp;
     stack('push to: %s, val: %s', addr.to(16, 2), val.to(16));
-    this.mem.w8({val, addr});
+    this.mem.w8(val, addr);
     this.sp = --this.sp & 0xff;
   }
 

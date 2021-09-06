@@ -14,7 +14,7 @@ export default class NROM {
     Object.seal(this);
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     if (addr < 0x2000) {
       const bank = (addr >> 12) & 1;
       this.chrRxm[bank][addr & 0xfff] = val;

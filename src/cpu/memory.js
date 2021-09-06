@@ -63,7 +63,7 @@ export default class Memory {
     throw new UnmappedAddressError(addr);
   }
 
-  w8({val, addr}) {
+  w8(val, addr) {
     assert(typeof val === 'number', 'invalid value');
     assert(typeof addr === 'number', 'invalid address');
     addr &= 0xffff;
@@ -77,11 +77,11 @@ export default class Memory {
         return;
       case 0x2:
       case 0x3:
-        this.nes.ppu.w8({val, addr});
+        this.nes.ppu.w8(val, addr);
         return;
       default:
         if (addr == PPU.OAMDMA) {
-          this.nes.ppu.w8({val, addr});
+          this.nes.ppu.w8(val, addr);
           return;
         } else if (addr == 0x4016) {
           this.nes.controller.write(val);
@@ -101,7 +101,7 @@ export default class Memory {
         } else if (addr < 0x8000) {
           // process.stdout.write(String.fromCharCode(val));
         }
-        this.nes.cart.w8({val, addr});
+        this.nes.cart.w8(val, addr);
         return;
     }
 
