@@ -1,3 +1,4 @@
+import assert from 'assert';
 import {UnmappedAddressError} from '../errors';
 
 export default class Memory {
@@ -16,6 +17,7 @@ export default class Memory {
   }
 
   r8(addr) {
+    assert(typeof addr === 'number', 'invalid address');
     switch (addr >> 12) {
       case 0x0:
       case 0x1:
@@ -35,6 +37,8 @@ export default class Memory {
   }
 
   w8(val, addr) {
+    assert(typeof val === 'number', 'invalid value');
+    assert(typeof addr === 'number', 'invalid address');
     switch (addr >> 12) {
       case 0x0:
       case 0x1: {
