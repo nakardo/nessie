@@ -13,10 +13,10 @@ const OAM_SPRITE_INDEX = 1;
 const OAM_SPRITE_ATTR = 2;
 
 export default class Video {
-  nes = null;
-  showFps = false;
+  ppu = null;
+  cart = null;
   onFrame = () => {};
-  fps = 0;
+
   bkgPalette = 0;
   linePtrn = new Array(FRAME_WIDTH).fill(0);
   lineColor = new Array(FRAME_WIDTH);
@@ -42,19 +42,15 @@ export default class Video {
   palette = new Array(8).fill().map(() => new Array(3).fill(0));
   sprites = new Array(64).fill().map(() => new Uint8Array(4));
 
-  constructor(nes, showFps, onFrame) {
-    this.nes = nes;
-    this.showFps = showFps;
+  constructor(ppu, cart, onFrame) {
+    this.ppu = ppu;
+    this.cart = cart;
     this.onFrame = onFrame;
 
     this.ctx.patternQuality = 'fast';
     this.ctx.quality = 'fast';
     this.ctx.textDrawingMode = 'path';
     this.ctx.antialias = 'none';
-    this.ctx.font = '10px Lucida Console';
-    this.ctx.textAlign = 'end';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillStyle = '#00ff00';
 
     Object.seal(this);
   }
@@ -70,21 +66,19 @@ export default class Video {
   }
 
   drawBackground() {
-    const {ppu, cart} = this.nes;
-
-    const [xscroll, yscroll] = ppu.scroll;
-    const yoffset = yscroll + ppu.scanline;
+    const [xscroll, yscroll] = this.ppu.scroll;
+    const yoffset = yscroll + this.ppu.scanline;
     const ysprite = yoffset & 7;
     const row = (yoffset >> 3) % 30;
 
-    let table = (ppu.ctrl & 3) >> 1;
-    if (!cart.mirroring && yoffset >= FRAME_HEIGHT) table = ++table & 1;
+    let table = (this.ppu.ctrl & 3) >> 1;
+    if (!this.cart.mirroring && yoffset >= FRAME_HEIGHT) table = ++table & 1;
 
     const nametable = this.nametable[table];
     const attrtable = this.attribute[table];
-    const ptrntable = this.pattern[(ppu.ctrl & 0x10) >> 4];
+    const ptrntable = this.pattern[(this.ppu.ctrl & 0x10) >> 4];
 
-    const maskoffset = ((ppu.mask & 2) << 2) ^ 8;
+    const maskoffset = ((this.ppu.mask & 2) << 2) ^ 8;
     for (let x = maskoffset; x < FRAME_WIDTH; x++) {
       const xoffset = xscroll + x;
       const col = (xoffset >> 3) & 0x1f;
@@ -99,31 +93,29 @@ export default class Video {
   }
 
   drawSprites() {
-    const {ppu} = this.nes;
-
-    const ptrntable = this.pattern[(ppu.ctrl & 8) >> 3];
-    // const size = (ppu.ctrl & 0x20) >> 5;
+    const ptrntable = this.pattern[(this.ppu.ctrl & 8) >> 3];
+    // const size = (this.ppu.ctrl & 0x20) >> 5;
 
     let indexes = [];
     for (let i = 0; i < this.sprites.length; i++) {
       if (
-        ppu.scanline > this.sprites[i][OAM_SPRITE_Y] &&
-        ppu.scanline <= this.sprites[i][OAM_SPRITE_Y] + 8 &&
+        this.ppu.scanline > this.sprites[i][OAM_SPRITE_Y] &&
+        this.ppu.scanline <= this.sprites[i][OAM_SPRITE_Y] + 8 &&
         this.sprites[i][OAM_SPRITE_Y] < 0xef
       )
         indexes.push(i);
     }
 
-    if (indexes.length > 8) ppu.stat |= 0x20;
+    if (indexes.length > 8) this.ppu.stat |= 0x20;
 
-    const masked = (((ppu.mask >> 1) & 3) ^ 3) > 0;
+    const masked = (((this.ppu.mask >> 1) & 3) ^ 3) > 0;
     for (let i = Math.min(8, indexes.length) - 1; i > -1; i--) {
       const s = this.sprites[indexes[i]];
       const priority = (s[OAM_SPRITE_ATTR] >> 5) & 1;
       const xflip = (s[OAM_SPRITE_ATTR] >> 6) & 1;
       const yflip = s[OAM_SPRITE_ATTR] >> 7;
       const sx = s[OAM_SPRITE_X];
-      const sy = ppu.scanline - s[OAM_SPRITE_Y] - 1;
+      const sy = this.ppu.scanline - s[OAM_SPRITE_Y] - 1;
       const py = yflip ? 7 - sy : sy;
 
       for (let x = sx; x < sx + 8 && x < FRAME_WIDTH; x++) {
@@ -135,9 +127,9 @@ export default class Video {
         if (!indexes[i] && color && this.linePtrn[x]) {
           if (
             (x > 7 && x < 255) ||
-            (x < 7 && !masked) // && ppu.scanline < 239
+            (x < 7 && !masked) // && this.ppu.scanline < 239
           )
-            ppu.stat |= 0x40;
+            this.ppu.stat |= 0x40;
         }
         if (!priority || !this.linePtrn[x]) this.lineColor[x] = color;
       }
@@ -145,17 +137,15 @@ export default class Video {
   }
 
   drawLine() {
-    const {ppu} = this.nes;
-
-    debug('drawing scanline: %d', ppu.scanline);
+    debug('drawing scanline: %d', this.ppu.scanline);
 
     this.linePtrn.fill(0);
     this.lineColor.fill(this.bkgPalette);
 
-    if (ppu.mask & 8) this.drawBackground();
-    if (ppu.mask & 0x10) this.drawSprites();
+    if (this.ppu.mask & 8) this.drawBackground();
+    if (this.ppu.mask & 0x10) this.drawSprites();
 
-    let offset = ppu.scanline * FRAME_WIDTH * 4;
+    let offset = this.ppu.scanline * FRAME_WIDTH * 4;
     for (let x = 0; x < FRAME_WIDTH; x++) {
       this.data[offset++] = palette[this.lineColor[x]][0];
       this.data[offset++] = palette[this.lineColor[x]][1];
@@ -167,11 +157,6 @@ export default class Video {
   render() {
     this.ctx.clearRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
     this.ctx.putImageData(this.image, 0, 0);
-
-    if (this.showFps) {
-      if (!(this.nes.frameCount % 15)) this.fps = Math.floor(this.nes.fps);
-      this.ctx.fillText(this.fps, FRAME_WIDTH - 5, 5);
-    }
     this.onFrame(this.canvas);
   }
 }

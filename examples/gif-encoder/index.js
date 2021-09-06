@@ -16,7 +16,6 @@ encoder.setRepeat(0);
 encoder.setDelay(1000 / 60);
 
 const nes = new Nes({
-  showFps: false,
   onFrame(canvas) {
     encoder.addFrame(canvas.getContext('2d'));
   },
