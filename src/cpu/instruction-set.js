@@ -131,7 +131,6 @@ const mnemonic = [
 ]
 
 export default new Array(0x100).fill(null).map((_, i) => ({
-  opcode: i,
   execute: execute[i],
   mode: mode[i],
   bytes: bytes[i],

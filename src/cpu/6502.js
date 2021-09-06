@@ -23,6 +23,10 @@ export default class MOS6502 {
   nmi = false;
   brk = false;
 
+  opcode = 0;
+  operand = 0;
+  branchCycles = 0;
+
   constructor(mem) {
     this.mem = mem;
     Object.seal(this);
@@ -150,42 +154,45 @@ export default class MOS6502 {
     interrupt('pc: %s', this.pc.to(16));
   }
 
-  decode() {
-    const opcode = this.mem.r8(this.pc);
-    const {mnemonic, ...inst} = instSet[opcode];
-    debug('pc: %s, op: %s[%s]', this.pc.to(16, 2), opcode.to(16), mnemonic);
-    return inst;
-  }
-
-  pageCrossedCycles({branchCycles, addr}) {
-    return (this.pc & 0xff00) != (addr & 0xff00) ? branchCycles : 0;
+  pageCrossedCycles(addr) {
+    return (this.pc & 0xff00) != (addr & 0xff00) ? this.branchCycles : 0;
   }
 
   runCycle() {
-    const inst = this.decode();
-    const {mode, bytes, cycles, branchCycles, execute} = inst;
-    const operand = this.pc + 1;
+    const opcode = this.mem.r8(this.pc);
+    const inst = instSet[opcode];
+
+    this.opcode = opcode;
+    this.operand = this.pc + 1;
+    this.branchCycles = inst.branchCycles;
+
+    debug(
+      'pc: %s, op: %s[%s]',
+      this.pc.to(16, 2),
+      this.opcode.to(16),
+      inst.mnemonic,
+    );
 
     let addr;
-    let totalCycles = cycles;
-    switch (mode) {
+    let totalCycles = inst.cycles;
+    switch (inst.mode) {
       case MODE.ACC:
       case MODE.IMP:
         break;
       case MODE.REL:
       case MODE.IMM:
-        addr = operand;
+        addr = this.operand;
         break;
       case MODE.ABS:
-        addr = this.mem.r16(operand);
+        addr = this.mem.r16(this.operand);
         break;
       case MODE.ABS_X:
-        addr = this.mem.r16(operand) + this.x;
-        totalCycles += this.pageCrossedCycles({branchCycles, addr});
+        addr = this.mem.r16(this.operand) + this.x;
+        totalCycles += this.pageCrossedCycles(addr);
         break;
       case MODE.ABS_Y:
-        addr = this.mem.r16(operand) + this.y;
-        totalCycles += this.pageCrossedCycles({branchCycles, addr});
+        addr = this.mem.r16(this.operand) + this.y;
+        totalCycles += this.pageCrossedCycles(addr);
         break;
       /**
        * JMP transfers program execution to the following address (absolute)
@@ -202,40 +209,40 @@ export default class MOS6502 {
        * $3000.
        */
       case MODE.IND: {
-        const laddr = this.mem.r16(operand);
+        const laddr = this.mem.r16(this.operand);
         const haddr = (laddr & 0xff00) | ((laddr + 1) & 0xff);
         addr = this.mem.r8(laddr) | (this.mem.r8(haddr) << 8);
         break;
       }
       case MODE.IDX_IND: {
-        const laddr = (this.mem.r8(operand) + this.x) & 0xff;
+        const laddr = (this.mem.r8(this.operand) + this.x) & 0xff;
         const haddr = (laddr + 1) & 0xff;
         addr = this.mem.r8(laddr) | (this.mem.r8(haddr) << 8);
         break;
       }
       case MODE.IND_IDX: {
-        const laddr = this.mem.r8(operand);
+        const laddr = this.mem.r8(this.operand);
         const haddr = (laddr + 1) & 0xff;
         addr = (this.mem.r8(laddr) | (this.mem.r8(haddr) << 8)) + this.y;
-        totalCycles += this.pageCrossedCycles({branchCycles, addr});
+        totalCycles += this.pageCrossedCycles(addr);
         break;
       }
       case MODE.ZERO_PAGE:
-        addr = this.mem.r8(operand);
+        addr = this.mem.r8(this.operand);
         break;
       case MODE.ZERO_PAGE_X:
-        addr = (this.mem.r8(operand) + this.x) & 0xff;
+        addr = (this.mem.r8(this.operand) + this.x) & 0xff;
         break;
       case MODE.ZERO_PAGE_Y:
-        addr = (this.mem.r8(operand) + this.y) & 0xff;
+        addr = (this.mem.r8(this.operand) + this.y) & 0xff;
         break;
       default:
         throw new Error('Unknown addressing mode');
     }
 
-    this.pc = (this.pc + bytes) & 0xffff;
+    this.pc = (this.pc + inst.bytes) & 0xffff;
     this.cycles += totalCycles;
-    execute({...inst, cpu: this, mem: this.mem, addr, operand});
+    inst.execute(this, this.mem, addr);
   }
 }
 

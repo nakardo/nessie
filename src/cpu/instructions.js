@@ -1,16 +1,16 @@
 const branch = (reg, cond) => {
-  return function branch({branchCycles, cpu, mem, addr}) {
+  return function branch(cpu, mem, addr) {
     if (cpu[reg]() == cond) {
       const offset = mem.r8(addr);
       addr = cpu.pc + ((offset & 0x80) > 0 ? -((0xff & ~offset) + 1) : offset);
-      cpu.cycles += cpu.pageCrossedCycles({branchCycles, addr});
+      cpu.cycles += cpu.pageCrossedCycles(addr);
       cpu.pc = addr & 0xffff;
     }
   };
 };
 
 const compare = (reg) => {
-  return function compare({cpu, mem, addr}) {
+  return function compare(cpu, mem, addr) {
     const val = cpu[reg];
     let res = mem.r8(addr);
     cpu.carry(val >= res);
@@ -21,7 +21,7 @@ const compare = (reg) => {
 };
 
 const decrement = (reg) => {
-  return function decrement({cpu}) {
+  return function decrement(cpu) {
     const val = cpu[reg] - 1;
     cpu.sign(val);
     cpu.zero(val);
@@ -30,7 +30,7 @@ const decrement = (reg) => {
 };
 
 const increment = (reg) => {
-  return function increment({cpu}) {
+  return function increment(cpu) {
     const val = cpu[reg] + 1;
     cpu.sign(val);
     cpu.zero(val);
@@ -39,7 +39,7 @@ const increment = (reg) => {
 };
 
 const load = (reg) => {
-  return function load({cpu, mem, addr}) {
+  return function load(cpu, mem, addr) {
     const val = mem.r8(addr);
     cpu.sign(val);
     cpu.zero(val);
@@ -47,7 +47,7 @@ const load = (reg) => {
   };
 };
 
-function addWithCarry({cpu}, val) {
+function addWithCarry(cpu, val) {
   const res = cpu.a + val + (cpu.carry() ? 1 : 0);
   cpu.zero(res);
   cpu.sign(res);
@@ -56,9 +56,9 @@ function addWithCarry({cpu}, val) {
   cpu.a = res & 0xff;
 }
 
-const andWithHighByte = ({reg, idx}) => {
-  return function andhb({cpu, mem, operand}) {
-    let addr = mem.r16(operand);
+const andWithHighByte = (reg, idx) => {
+  return function andhb(cpu, mem) {
+    let addr = mem.r16(cpu.operand);
     const haddr = addr >> 8;
     const laddr = addr & 0xff;
     if (laddr + cpu[idx] > 0xff) {
@@ -72,8 +72,8 @@ const andWithHighByte = ({reg, idx}) => {
   };
 };
 
-const transfer = ({from, to}) => {
-  return function transfer({cpu}) {
+const transfer = (from, to) => {
+  return function transfer(cpu) {
     const val = cpu[from];
     cpu.sign(val);
     cpu.zero(val);
@@ -82,13 +82,15 @@ const transfer = ({from, to}) => {
 };
 
 const combine = (...fns) => {
-  return function combine({...inst}) {
-    fns.forEach((fn) => fn(inst));
+  return function combine(cpu, mem, addr) {
+    fns.forEach((fn) => fn(cpu, mem, addr));
   };
 };
 
-function unknown({opcode, cpu}) {
-  throw new Error(`Invalid opcode: ${opcode.to(16)} at ${cpu.pc.to(16, 2)}`);
+function unknown(cpu) {
+  throw new Error(
+    `Invalid opcode: ${cpu.opcode.to(16)} at ${cpu.pc.to(16, 2)}`,
+  );
 }
 
 // Official opcodes
@@ -113,7 +115,7 @@ function unknown({opcode, cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export const adc = ({cpu, mem, addr}) => addWithCarry({cpu}, mem.r8(addr));
+export const adc = (cpu, mem, addr) => addWithCarry(cpu, mem.r8(addr));
 
 /**
  * AND                  "AND" memory with accumulator                    AND
@@ -135,7 +137,7 @@ export const adc = ({cpu, mem, addr}) => addWithCarry({cpu}, mem.r8(addr));
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function and({cpu, mem, addr}) {
+export function and(cpu, mem, addr) {
   const val = mem.r8(addr) & cpu.a;
   cpu.sign(val);
   cpu.zero(val);
@@ -159,7 +161,7 @@ export function and({cpu, mem, addr}) {
  * |  Absolute, X   |   ASL Oper,X          |    1E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function asl({opcode, cpu, mem, addr}) {
+export function asl(cpu, mem, addr) {
   const execute = (val) => {
     cpu.carry(val & 0x80);
     val = (val << 1) & 0xff;
@@ -168,7 +170,7 @@ export function asl({opcode, cpu, mem, addr}) {
     return val;
   };
 
-  if (opcode === 0x0a) {
+  if (cpu.opcode === 0x0a) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
@@ -238,7 +240,7 @@ export const beq = branch('zero', true);
  * |  Absolute      |   BIT Oper            |    2C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function bit({cpu, mem, addr}) {
+export function bit(cpu, mem, addr) {
   const val = mem.r8(addr);
   cpu.sign(val);
   cpu.overflow(val & 0x40);
@@ -306,7 +308,7 @@ export const bpl = branch('sign', false);
  * +----------------+-----------------------+---------+---------+----------+
  * 1. A BRK command cannot be masked by setting I.
  */
-export function brk({cpu}) {
+export function brk(cpu) {
   cpu.brk = true;
 }
 
@@ -354,7 +356,7 @@ export const bvs = branch('overflow', true);
  * |  Implied       |   CLC                 |    18   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function clc({cpu}) {
+export function clc(cpu) {
   cpu.carry(false);
 }
 
@@ -370,7 +372,7 @@ export function clc({cpu}) {
  * |  Implied       |   CLD                 |    D8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cld({cpu}) {
+export function cld(cpu) {
   cpu.decimal(false);
 }
 
@@ -386,7 +388,7 @@ export function cld({cpu}) {
  * |  Implied       |   CLI                 |    58   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function cli({cpu}) {
+export function cli(cpu) {
   cpu.interrupt(false);
 }
 
@@ -402,7 +404,7 @@ export function cli({cpu}) {
  * |  Implied       |   CLV                 |    B8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function clv({cpu}) {
+export function clv(cpu) {
   cpu.overflow(false);
 }
 
@@ -473,7 +475,7 @@ export const cpy = compare('y');
  * |  Absolute,X    |   DEC Oper,X          |    DE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function dec({cpu, mem, addr}) {
+export function dec(cpu, mem, addr) {
   const val = mem.r8(addr) - 1;
   cpu.sign(val);
   cpu.zero(val);
@@ -528,7 +530,7 @@ export const dey = decrement('y');
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 if page boundary is crossed.
  */
-export function eor({cpu, mem, addr}) {
+export function eor(cpu, mem, addr) {
   const val = mem.r8(addr) ^ cpu.a;
   cpu.sign(val);
   cpu.zero(val);
@@ -549,7 +551,7 @@ export function eor({cpu, mem, addr}) {
  * |  Absolute,X    |   INC Oper,X          |    FE   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function inc({cpu, mem, addr}) {
+export function inc(cpu, mem, addr) {
   const val = mem.r8(addr) + 1;
   cpu.sign(val);
   cpu.zero(val);
@@ -596,7 +598,7 @@ export const iny = increment('y');
  * |  Indirect      |   JMP (Oper)          |    6C   |    3    |    5     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function jmp({cpu, addr}) {
+export function jmp(cpu, _, addr) {
   cpu.pc = addr;
 }
 
@@ -612,7 +614,7 @@ export function jmp({cpu, addr}) {
  * |  Absolute      |   JSR Oper            |    20   |    3    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function jsr({cpu, addr}) {
+export function jsr(cpu, _, addr) {
   cpu.push16(cpu.pc - 1);
   cpu.pc = addr;
 }
@@ -693,7 +695,7 @@ export const ldy = load('y');
  * |  Absolute,X    |   LSR Oper,X          |    5E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function lsr({opcode, cpu, mem, addr}) {
+export function lsr(cpu, mem, addr) {
   const execute = (val) => {
     cpu.carry(val & 1);
     val >>= 1;
@@ -702,7 +704,7 @@ export function lsr({opcode, cpu, mem, addr}) {
     return val;
   };
 
-  if (opcode === 0x4a) {
+  if (cpu.opcode === 0x4a) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
@@ -743,7 +745,7 @@ export function nop() {}
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 on page crossing
  */
-export function ora({cpu, mem, addr}) {
+export function ora(cpu, mem, addr) {
   const val = mem.r8(addr) | cpu.a;
   cpu.sign(val);
   cpu.zero(val);
@@ -762,7 +764,7 @@ export function ora({cpu, mem, addr}) {
  * |  Implied       |   PHA                 |    48   |    1    |    3     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function pha({cpu}) {
+export function pha(cpu) {
   cpu.push8(cpu.a);
 }
 
@@ -778,7 +780,7 @@ export function pha({cpu}) {
  * |  Implied       |   PHP                 |    08   |    1    |    3     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function php({cpu}) {
+export function php(cpu) {
   cpu.push8(cpu.stat | 0b110000); // Set bits 5 and 4.
 }
 
@@ -794,7 +796,7 @@ export function php({cpu}) {
  * |  Implied       |   PLA                 |    68   |    1    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function pla({cpu}) {
+export function pla(cpu) {
   const val = cpu.pull8();
   cpu.sign(val);
   cpu.zero(val);
@@ -813,7 +815,7 @@ export function pla({cpu}) {
  * |  Implied       |   PLP                 |    28   |    1    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function plp({cpu}) {
+export function plp(cpu) {
   cpu.stat = cpu.pull8() & 0b11001111; // Ignore bits 5 and 4.
 }
 
@@ -836,7 +838,7 @@ export function plp({cpu}) {
  * |  Absolute,X    |   ROL Oper,X          |    3E   |    3    |    7     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rol({opcode, cpu, mem, addr}) {
+export function rol(cpu, mem, addr) {
   const execute = (val) => {
     val <<= 1;
     if (cpu.carry()) val |= 1;
@@ -847,7 +849,7 @@ export function rol({opcode, cpu, mem, addr}) {
     return val;
   };
 
-  if (opcode === 0x2a) {
+  if (cpu.opcode === 0x2a) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
@@ -877,7 +879,7 @@ export function rol({opcode, cpu, mem, addr}) {
  *   Note: ROR instruction is available on MCS650X microprocessors after
  *         June, 1976.
  */
-export function ror({opcode, cpu, mem, addr}) {
+export function ror(cpu, mem, addr) {
   const execute = (val) => {
     if (cpu.carry()) {
       val |= 0x100;
@@ -889,7 +891,7 @@ export function ror({opcode, cpu, mem, addr}) {
     return val;
   };
 
-  if (opcode === 0x6a) {
+  if (cpu.opcode === 0x6a) {
     cpu.a = execute(cpu.a);
   } else {
     const val = execute(mem.r8(addr));
@@ -908,7 +910,7 @@ export function ror({opcode, cpu, mem, addr}) {
  * |  Implied       |   RTI                 |    40   |    1    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rti({cpu}) {
+export function rti(cpu) {
   cpu.stat = cpu.pull8() & 0b11001111; // Ignore bits 5 and 4.
   cpu.pc = cpu.pull16();
 }
@@ -924,7 +926,7 @@ export function rti({cpu}) {
  * |  Implied       |   RTS                 |    60   |    1    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function rts({cpu}) {
+export function rts(cpu) {
   cpu.pc = (cpu.pull16() + 1) & 0xffff;
 }
 
@@ -948,9 +950,9 @@ export function rts({cpu}) {
  * +----------------+-----------------------+---------+---------+----------+
  * * Add 1 when page boundary is crossed.
  */
-export function sbc({cpu, mem, addr}) {
+export function sbc(cpu, mem, addr) {
   const val = mem.r8(addr) ^ 0xff;
-  addWithCarry({cpu}, val);
+  addWithCarry(cpu, val);
 }
 
 /**
@@ -965,7 +967,7 @@ export function sbc({cpu, mem, addr}) {
  * |  Implied       |   SEC                 |    38   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sec({cpu}) {
+export function sec(cpu) {
   cpu.carry(true);
 }
 
@@ -980,7 +982,7 @@ export function sec({cpu}) {
  * |  Implied       |   SED                 |    F8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sed({cpu}) {
+export function sed(cpu) {
   cpu.decimal(true);
 }
 
@@ -995,7 +997,7 @@ export function sed({cpu}) {
  * |  Implied       |   SEI                 |    78   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sei({cpu}) {
+export function sei(cpu) {
   cpu.interrupt(true);
 }
 
@@ -1017,7 +1019,7 @@ export function sei({cpu}) {
  * |  (Indirect),Y  |   STA (Oper),Y        |    91   |    2    |    6     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sta({cpu, mem, addr}) {
+export function sta(cpu, mem, addr) {
   mem.w8({val: cpu.a, addr});
 }
 
@@ -1035,7 +1037,7 @@ export function sta({cpu, mem, addr}) {
  * |  Absolute      |   STX Oper            |    8E   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function stx({cpu, mem, addr}) {
+export function stx(cpu, mem, addr) {
   mem.w8({val: cpu.x, addr});
 }
 
@@ -1053,7 +1055,7 @@ export function stx({cpu, mem, addr}) {
  * |  Absolute      |   STY Oper            |    8C   |    3    |    4     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function sty({cpu, mem, addr}) {
+export function sty(cpu, mem, addr) {
   mem.w8({val: cpu.y, addr});
 }
 
@@ -1069,7 +1071,7 @@ export function sty({cpu, mem, addr}) {
  * |  Implied       |   TAX                 |    AA   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const tax = transfer({from: 'a', to: 'x'});
+export const tax = transfer('a', 'x');
 
 /**
  * TAY                TAY Transfer accumulator to index Y                TAY
@@ -1083,7 +1085,7 @@ export const tax = transfer({from: 'a', to: 'x'});
  * |  Implied       |   TAY                 |    A8   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const tay = transfer({from: 'a', to: 'y'});
+export const tay = transfer('a', 'y');
 
 /**
  * TSX              TSX Transfer stack pointer to index X                TSX
@@ -1097,7 +1099,7 @@ export const tay = transfer({from: 'a', to: 'y'});
  * |  Implied       |   TSX                 |    BA   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const tsx = transfer({from: 'sp', to: 'x'});
+export const tsx = transfer('sp', 'x');
 
 /**
  * TXA                TXA Transfer index X to accumulator                TXA
@@ -1110,7 +1112,7 @@ export const tsx = transfer({from: 'sp', to: 'x'});
  * |  Implied       |   TXA                 |    8A   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const txa = transfer({from: 'x', to: 'a'});
+export const txa = transfer('x', 'a');
 
 /**
  * TXS              TXS Transfer index X to stack pointer                TXS
@@ -1123,7 +1125,7 @@ export const txa = transfer({from: 'x', to: 'a'});
  * |  Implied       |   TXS                 |    9A   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export function txs({cpu}) {
+export function txs(cpu) {
   cpu.sp = cpu.x;
 }
 
@@ -1139,7 +1141,7 @@ export function txs({cpu}) {
  * |  Implied       |   TYA                 |    98   |    1    |    2     |
  * +----------------+-----------------------+---------+---------+----------+
  */
-export const tya = transfer({from: 'y', to: 'a'});
+export const tya = transfer('y', 'a');
 
 // Unofficial opcodes
 
@@ -1154,8 +1156,8 @@ export const tya = transfer({from: 'y', to: 'a'});
  * Immediate   |AAC #arg   |$0B| 2 | 2
  * Immediate   |AAC #arg   |$2B| 2 | 2
  */
-export function anc({cpu, ...inst}) {
-  and({...inst, cpu});
+export function anc(cpu, mem, addr) {
+  and(cpu, mem, addr);
   cpu.carry(cpu.sign());
 }
 
@@ -1172,7 +1174,7 @@ export function anc({cpu, ...inst}) {
  * (Indirect,X)|AAX (arg,X)|$83| 2 | 6
  * Absolute    |AAX arg    |$8F| 3 | 4.
  */
-export function sax({cpu, mem, addr}) {
+export function sax(cpu, mem, addr) {
   mem.w8({val: cpu.a & cpu.x, addr});
 }
 
@@ -1193,7 +1195,7 @@ export function sax({cpu, mem, addr}) {
  *  ------------|-----------|---|---|---
  *  Immediate   |ARR #arg   |$6B| 2 | 2
  */
-export function arr({cpu, mem, addr}) {
+export function arr(cpu, mem, addr) {
   let val = cpu.a & mem.r8(addr);
   if (cpu.carry()) {
     val |= 0x100;
@@ -1216,9 +1218,9 @@ export function arr({cpu, mem, addr}) {
  * ------------|-----------|---|---|---
  * Immediate   |ASR #arg   |$4B| 2 | 2
  */
-export function alr({...inst}) {
-  and(inst);
-  lsr({...inst, opcode: 0x4a});
+export function alr(cpu, mem, addr) {
+  and(cpu, mem, addr);
+  lsr(cpu, mem, addr);
 }
 
 /**
@@ -1231,7 +1233,7 @@ export function alr({...inst}) {
  * Absolute,Y  |AXA arg,Y  |$9F| 3 | 5
  * (Indirect),Y|AXA arg    |$93| 2 | 6
  */
-export function ahx({cpu, mem, addr}) {
+export function ahx(cpu, mem, addr) {
   mem.w8({val: cpu.x & cpu.a & 7, addr});
 }
 
@@ -1246,7 +1248,7 @@ export function ahx({cpu, mem, addr}) {
  * ------------|-----------|---|---|---
  * Immediate   |AXS #arg   |$CB| 2 | 2
  */
-export function axs({cpu, mem, addr}) {
+export function axs(cpu, mem, addr) {
   const val = cpu.x & cpu.a;
   let res = mem.r8(addr);
   cpu.carry(val >= res);
@@ -1326,7 +1328,7 @@ export const stp = unknown;
  * ------------|-----------|---|---|---
  * Absolute,Y  |LAR arg,Y  |$BB| 3 | 4 *
  */
-export function las({cpu, mem, addr}) {
+export function las(cpu, mem, addr) {
   const val = cpu.sp & mem.r8(addr);
   cpu.sign(val);
   cpu.zero(val);
@@ -1436,7 +1438,7 @@ export const sre = combine(lsr, eor);
  * ------------|-----------|---|---|---
  * Absolute,Y  |SXA arg,Y  |$9E| 3 | 5
  */
-export const shx = andWithHighByte({reg: 'x', idx: 'y'});
+export const shx = andWithHighByte('x', 'y');
 
 /**
  * SYA (SHY) [SAY]
@@ -1452,7 +1454,7 @@ export const shx = andWithHighByte({reg: 'x', idx: 'y'});
  * ------------|-----------|---|---|---
  * Absolute,X  |SYA arg,X  |$9C| 3 | 5
  */
-export const shy = andWithHighByte({reg: 'y', idx: 'x'});
+export const shy = andWithHighByte('y', 'x');
 
 /**
  * XAA (ANE) [XAA]
@@ -1481,7 +1483,7 @@ export const xaa = unknown;
  * ------------|-----------|---|---|---
  * Absolute,Y  |XAS arg,Y  |$9B| 3 | 5
  */
-export function tas({cpu, mem, addr}) {
+export function tas(cpu, mem, addr) {
   cpu.sp = cpu.x & cpu.a;
   let val = (mem.r8(addr) >> 4) + 1;
   val &= cpu.sp;
