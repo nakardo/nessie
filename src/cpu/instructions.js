@@ -72,6 +72,43 @@ const andWithHighByte = (reg, idx) => {
   };
 };
 
+function shiftLeftOneBit(cpu, val) {
+  cpu.carry(val & 0x80);
+  val = (val << 1) & 0xff;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
+}
+
+function shiftRightOneBit(cpu, val) {
+  cpu.carry(val & 1);
+  val >>= 1;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
+}
+
+function rotateOneBitLeft(cpu, val) {
+  val <<= 1;
+  if (cpu.carry()) val |= 1;
+  cpu.carry(val > 0xff);
+  val &= 0xff;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
+}
+
+function rotateOneBitRight(cpu, val) {
+  if (cpu.carry()) {
+    val |= 0x100;
+  }
+  cpu.carry(val & 1);
+  val >>= 1;
+  cpu.sign(val);
+  cpu.zero(val);
+  return val;
+}
+
 const transfer = (from, to) => {
   return function transfer(cpu) {
     const val = cpu[from];
@@ -162,20 +199,8 @@ export function and(cpu, mem, addr) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function asl(cpu, mem, addr) {
-  const execute = (val) => {
-    cpu.carry(val & 0x80);
-    val = (val << 1) & 0xff;
-    cpu.sign(val);
-    cpu.zero(val);
-    return val;
-  };
-
-  if (cpu.opcode === 0x0a) {
-    cpu.a = execute(cpu.a);
-  } else {
-    const val = execute(mem.r8(addr));
-    mem.w8(val, addr);
-  }
+  if (cpu.opcode === 0x0a) cpu.a = shiftLeftOneBit(cpu, cpu.a);
+  else mem.w8(shiftLeftOneBit(cpu, mem.r8(addr)), addr);
 }
 
 /**
@@ -696,20 +721,8 @@ export const ldy = load('y');
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function lsr(cpu, mem, addr) {
-  const execute = (val) => {
-    cpu.carry(val & 1);
-    val >>= 1;
-    cpu.sign(val);
-    cpu.zero(val);
-    return val;
-  };
-
-  if (cpu.opcode === 0x4a) {
-    cpu.a = execute(cpu.a);
-  } else {
-    const val = execute(mem.r8(addr));
-    mem.w8(val, addr);
-  }
+  if (cpu.opcode === 0x4a) cpu.a = shiftRightOneBit(cpu, cpu.a);
+  else mem.w8(shiftRightOneBit(cpu, mem.r8(addr)), addr);
 }
 
 /**
@@ -839,22 +852,8 @@ export function plp(cpu) {
  * +----------------+-----------------------+---------+---------+----------+
  */
 export function rol(cpu, mem, addr) {
-  const execute = (val) => {
-    val <<= 1;
-    if (cpu.carry()) val |= 1;
-    cpu.carry(val > 0xff);
-    val &= 0xff;
-    cpu.sign(val);
-    cpu.zero(val);
-    return val;
-  };
-
-  if (cpu.opcode === 0x2a) {
-    cpu.a = execute(cpu.a);
-  } else {
-    const val = execute(mem.r8(addr));
-    mem.w8(val, addr);
-  }
+  if (cpu.opcode === 0x2a) cpu.a = rotateOneBitLeft(cpu, cpu.a);
+  else mem.w8(rotateOneBitLeft(cpu, mem.r8(addr)), addr);
 }
 
 /**
@@ -880,23 +879,8 @@ export function rol(cpu, mem, addr) {
  *         June, 1976.
  */
 export function ror(cpu, mem, addr) {
-  const execute = (val) => {
-    if (cpu.carry()) {
-      val |= 0x100;
-    }
-    cpu.carry(val & 1);
-    val >>= 1;
-    cpu.sign(val);
-    cpu.zero(val);
-    return val;
-  };
-
-  if (cpu.opcode === 0x6a) {
-    cpu.a = execute(cpu.a);
-  } else {
-    const val = execute(mem.r8(addr));
-    mem.w8(val, addr);
-  }
+  if (cpu.opcode === 0x6a) cpu.a = rotateOneBitRight(cpu, cpu.a);
+  else mem.w8(rotateOneBitRight(cpu, mem.r8(addr)), addr);
 }
 
 /**
@@ -1219,7 +1203,7 @@ export function arr(cpu, mem, addr) {
  */
 export function alr(cpu, mem, addr) {
   and(cpu, mem, addr);
-  lsr(cpu, mem, addr);
+  cpu.a = shiftRightOneBit(cpu, cpu.a);
 }
 
 /**
