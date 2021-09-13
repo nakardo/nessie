@@ -3,17 +3,17 @@ import {UnmappedAddressError} from '../errors';
 
 export default class Memory {
   nes = null;
-  vram = [new Uint8Array(0x400), new Uint8Array(0x400)];
+  vram = [
+    new Uint8Array(0x400),
+    new Uint8Array(0x400),
+    new Uint8Array(0x400),
+    new Uint8Array(0x400),
+  ];
   palette = new Uint8Array(0x20);
 
   constructor(nes) {
     this.nes = nes;
     Object.seal(this);
-  }
-
-  getNametable(addr) {
-    if (this.nes.cart.mirroring) return (addr >> 10) & 1;
-    else return (addr >> 11) & 1;
   }
 
   r8(addr) {
@@ -25,7 +25,7 @@ export default class Memory {
       case 0x2:
       case 0x3:
         if (addr < 0x3f00) {
-          return this.vram[this.getNametable(addr)][addr & 0x3ff];
+          return this.vram[(addr >> 10) & 3][addr & 0x3ff];
         } else {
           return this.palette[addr & 0x1f];
         }
@@ -50,10 +50,10 @@ export default class Memory {
       case 0x2:
       case 0x3: {
         if (addr < 0x3f00) {
-          const index = this.getNametable(addr);
+          const index = (addr >> 10) & 3;
           if ((addr & 0x3ff) < 0x3c0) {
-            const nametable = this.nes.video.nametable[index];
-            nametable[(addr >> 5) & 0x1f][addr & 0x1f] = val;
+            const tilemap = this.nes.video.tilemap[index];
+            tilemap[(addr >> 5) & 0x1f][addr & 0x1f] = val;
           } else {
             const attribute = this.nes.video.attribute[index];
             const bits = attribute[(addr >> 3) & 7][addr & 7];

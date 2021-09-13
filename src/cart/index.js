@@ -53,7 +53,7 @@ export default class Cart {
     debug('mapper index: %d, uses: %s', mapper, Mapper.name);
     debug('prg-rom 16kb size units: %d', prgRomPagesCount);
     debug('chr-rxm 8kb size units: %d', chrRxmPagesCount);
-    debug('mirroring: %d', data[6] & 1);
+    debug('mirroring: %d', data[6] & 0b1001);
     debug('rom control byte #1: %s', data[6].to(2));
     debug('rom control byte #2: %s', data[7].to(2));
 
@@ -85,7 +85,7 @@ export default class Cart {
       prgRam: this.prgRam,
       chrRxm: this.chrRxm,
     });
-    this.mirroring = data[6] & 1;
+    this.mirroring = data[6] & 0b1001;
     this.loaded = true;
   }
 

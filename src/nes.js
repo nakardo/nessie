@@ -20,13 +20,14 @@ export default class Nes {
   frameCycles = 0;
 
   constructor({onFrame}) {
-    this.video = new Video(this.ppu, this.cart, onFrame);
+    this.video = new Video(this, onFrame);
     Object.seal(this);
   }
 
   loadCart(buf) {
     debug('loading cart');
     this.cart.load(new Uint8Array(buf));
+    this.video.updateNametableIndexes(this.cart.mirroring);
   }
 
   runFrame() {
