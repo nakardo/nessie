@@ -48,7 +48,6 @@ export default class Video {
 
     this.ctx.patternQuality = 'fast';
     this.ctx.quality = 'fast';
-    this.ctx.textDrawingMode = 'path';
     this.ctx.antialias = 'none';
 
     Object.seal(this);
