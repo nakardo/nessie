@@ -74,7 +74,7 @@ export default class Video {
   }
 
   drawBackground() {
-    let [xscroll, yscroll] = this.nes.ppu.scroll;
+    const [xscroll, yscroll] = this.nes.ppu.scroll;
     const yoffset = yscroll + this.nes.ppu.scanline;
     const ysprite = yoffset & 7;
     const row = (yoffset >> 3) % 30;
