@@ -35,7 +35,11 @@ export default class Nes {
     FRAMELOOP: for (;;) {
       cycles = this.cpu.step();
       this.frameCycles += cycles;
-      for (cycles *= 3; cycles > 0; cycles--) {
+      // WTF(nakardo): ntsc ppu should run at 3 times the cpu rate?
+      // See:
+      // - https://wiki.nesdev.com/w/index.php?title=PPU_frame_timing#CPU-PPU_Clock_Alignment
+      // - https://wiki.nesdev.com/w/index.php?title=CPU#Notes
+      for (cycles *= 4; cycles > 0; cycles--) {
         this.ppu.step();
         if (this.ppu.renderFrame) {
           break FRAMELOOP;
