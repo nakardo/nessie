@@ -1,4 +1,5 @@
 body {
+  font-family: monospace;
   margin: 0;
   background-color: black;
   color: white;
@@ -41,5 +42,24 @@ canvas {
 
 #action-buttons {
   position: absolute;
-  padding: 10px;
+  margin: 10px;
+}
+
+table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 10px;
+  margin: 10px;
+}
+
+th,
+td {
+  border: 1px solid white;
+  padding: 4px;
+}
+
+#controls {
+  position: relative;
+  float: right;
 }

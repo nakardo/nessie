@@ -1,4 +1,5 @@
 body {
+  font-family: monospace;
   margin: 0;
   background-color: black;
   color: white;
@@ -41,5 +42,5 @@ canvas {
 
 #action-buttons {
   position: absolute;
-  padding: 10px;
+  margin: 10px;
 }
