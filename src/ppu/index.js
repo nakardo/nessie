@@ -31,6 +31,7 @@ export default class Ppu {
 
   renderFrame = false;
   isOddFrame = true;
+  sprite0Hit = false;
 
   constructor(nes) {
     this.nes = nes;
@@ -52,6 +53,7 @@ export default class Ppu {
     this.vramAddr = 0;
     this.renderFrame = false;
     this.isOddFrame = false;
+    this.sprite0Hit = false;
   }
 
   incrementVramAddress() {
@@ -96,6 +98,13 @@ export default class Ppu {
 
   renderScanline() {
     if (this.scanline < 240) {
+      // NOTE(nakardo): reporting sprite 0 hit delayed by one line seems
+      // to make it work.
+      // See: https://forums.nesdev.org/viewtopic.php?t=15890
+      if (this.sprite0Hit) {
+        this.stat |= 0x40;
+        this.sprite0Hit = false;
+      }
       this.nes.video.drawLine();
     } else if (this.scanline == 261) {
       this.renderFrame = true;
