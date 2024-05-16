@@ -20,6 +20,7 @@ export default class Video {
   nametables = [];
   linePtrn = new Array(FRAME_WIDTH).fill(0);
   lineColor = new Array(FRAME_WIDTH);
+  sprite0Hit = false;
 
   canvas = createCanvas(FRAME_WIDTH, FRAME_HEIGHT);
   ctx = this.canvas.getContext('2d', {alpha: false, pixelFormat: 'RGB24'});
@@ -137,8 +138,9 @@ export default class Video {
           if (
             (x > 7 && x < 255) ||
             (x < 7 && !masked) // && this.nes.ppu.scanline < 239
-          )
-            this.nes.ppu.stat |= 0x40;
+          ) {
+            this.sprite0Hit = true;
+          }
         }
         if (!priority || !this.linePtrn[x]) this.lineColor[x] = color;
       }
@@ -150,6 +152,14 @@ export default class Video {
 
     this.linePtrn.fill(0);
     this.lineColor.fill(this.bkgPalette);
+
+    // NOTE(nakardo): reporting sprite 0 hit delayed by one line seems
+    // to make it work.
+    // See: https://forums.nesdev.org/viewtopic.php?t=15890
+    if (this.sprite0Hit) {
+      this.nes.ppu.stat |= 0x40;
+      this.sprite0Hit = false;
+    }
 
     if (this.nes.ppu.mask & 8) this.drawBackground();
     if (this.nes.ppu.mask & 0x10) this.drawSprites();
