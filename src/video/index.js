@@ -137,8 +137,9 @@ export default class Video {
           if (
             (x > 7 && x < 255) ||
             (x < 7 && !masked) // && this.nes.ppu.scanline < 239
-          )
-            this.nes.ppu.stat |= 0x40;
+          ) {
+            this.nes.ppu.sprite0Hit = true;
+          }
         }
         if (!priority || !this.linePtrn[x]) this.lineColor[x] = color;
       }

@@ -6,9 +6,6 @@ const debug = Debug('nes:cart');
 
 export default class Cart {
   nes = null;
-  prgRam = new Uint8Array(0x2000);
-  prgRom = null;
-  chrRxm = null;
   mapper = null;
   mirroring = 0;
   loaded = false;
@@ -59,7 +56,7 @@ export default class Cart {
 
     // Cart memory & mapper
 
-    this.prgRom = Cart.createMemory({
+    const prgRom = Cart.createMemory({
       data: data.slice(0x10),
       pages: prgRomPagesCount,
       size: 0x4000,
@@ -69,22 +66,18 @@ export default class Cart {
     if (chrRxmPagesCount > 0) {
       chrRxmData = data.slice(0x10 + 0x4000 * prgRomPagesCount);
     }
-    this.chrRxm = Cart.createMemory({
+    const chrRxm = Cart.createMemory({
       data: chrRxmData, // 0 means the board uses chr-ram.
       pages: (chrRxmPagesCount || 1) << 1, // shift count to have 4kb banks.
       size: 0x1000,
     });
-    this.chrRxm.forEach((chrRxm, table) => {
+    chrRxm.forEach((chrRxm, table) => {
       chrRxm.forEach((val, addr) =>
         this.nes.video.updatePattern(table, val, addr),
       );
     });
 
-    this.mapper = new Mapper({
-      prgRom: this.prgRom,
-      prgRam: this.prgRam,
-      chrRxm: this.chrRxm,
-    });
+    this.mapper = new Mapper({prgRom, prgRam: new Uint8Array(0x2000), chrRxm});
     this.mirroring = data[6] & 0b1001;
     this.loaded = true;
   }

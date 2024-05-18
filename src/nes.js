@@ -9,6 +9,8 @@ import Controller from './controller';
 
 const debug = Debug('nes');
 
+const MAX_FPS_INTERVAL = 1000 / 60;
+
 export default class Nes {
   video = null;
   cart = new Cart(this);
@@ -62,9 +64,15 @@ export default class Nes {
   }
 
   start() {
+    let then = Date.now();
     this.reset();
     const loop = () => {
-      this.runFrame();
+      const now = Date.now();
+      const elapsed = now - then;
+      if (elapsed > MAX_FPS_INTERVAL) {
+        then = now - (elapsed % MAX_FPS_INTERVAL);
+        this.runFrame();
+      }
       this.loop = raf(loop);
     };
     this.loop = raf(loop);
